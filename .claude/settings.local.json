@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub get)",
+      "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\(''Path'', \\([System.Environment]::GetEnvironmentVariable\\(''Path'',''Machine''\\) -replace ''C:\\\\\\\\src\\\\\\\\flutter\\\\\\\\bin;?'',''''\\) + '';C:\\\\Users\\\\javie\\\\flutter\\\\bin'', ''Machine''\\)\")",
+      "Bash(C:/Users/javie/flutter/bin/flutter.bat --version)",
+      "Bash(for d in drawable-hdpi drawable-mdpi drawable-xhdpi drawable-xxhdpi drawable-xxxhdpi drawable-night-hdpi drawable-night-mdpi drawable-night-xhdpi drawable-night-xxhdpi drawable-night-xxxhdpi)",
+      "Bash(do echo \"=== $d ===\")",
+      "Read(//c/navajas_latinas_v2/android/app/src/main/res/**)",
+      "Bash(done)",
+      "Bash(for d in drawable-hdpi drawable-mdpi drawable-xhdpi drawable-xxhdpi drawable-xxxhdpi)",
+      "Bash(grep -r \"android12splash\\\\|drawable/splash\" \"c:/navajas_latinas_v2/android/app/src/main/res/values\"*)"
+    ]
+  }
+}

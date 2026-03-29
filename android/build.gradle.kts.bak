@@ -1,0 +1,6 @@
+﻿plugins {
+    // Dejá que Flutter traiga AGP y Kotlin en el classpath (no los declares acá).
+    id("dev.flutter.flutter-gradle-plugin") version "1.0.0" apply false
+    // Google Services sí necesita versión aquí
+    id("com.google.gms.google-services") version "4.3.15" apply false
+}

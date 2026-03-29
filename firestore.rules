@@ -1,0 +1,46 @@
+rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil del usuario due?o
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Turnos (Agenda)
+    match /appointments/{id} {
+      // leer y crear: con login alcanza
+      allow read, create: if request.auth != null;
+      // actualizar / borrar: solo el due?o
+      allow update, delete:
+        if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // Insumos internos del local
+    match /supplies/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete:
+        if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // Cat?logo de venta (puede ser p?blico a futuro)
+    match /products/{id} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete:
+        if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // Movimientos de caja / ventas
+    match /sales/{id} {
+      allow read, create: if request.auth != null;
+      allow update, delete:
+        if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+    }
+  }
+}

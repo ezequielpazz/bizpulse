@@ -1,0 +1,72 @@
+name: bizpulse
+description: "El pulso de tu negocio"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.4.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+  firebase_storage: ^12.3.0
+
+  # Notificaciones locales y zona horaria
+  flutter_local_notifications: 19.5.0
+  timezone: 0.10.1
+  intl: 0.20.2
+
+  # Configuración y tema
+  shared_preferences: ^2.3.2
+  provider: ^6.1.2
+  flutter_colorpicker: ^1.1.0
+  google_fonts: ^6.2.1
+
+  # Catálogo de servicios (SQLite local)
+  sqflite: ^2.3.3
+  path: ^1.9.0
+
+  # Backup
+  path_provider: ^2.1.5
+  file_picker: ^8.0.0
+
+  # Onboarding
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_native_splash: ^2.4.1
+  flutter_launcher_icons: ^0.14.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icon/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+
+# Config del splash nativo (Android/iOS)
+flutter_native_splash:
+  color: "#0D0D0D"
+  image: assets/images/logo.png
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true
+  android_12:
+    color: "#0D0D0D"
+    image: assets/images/logo.png
