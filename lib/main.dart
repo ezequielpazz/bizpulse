@@ -23,6 +23,7 @@ Future<void> main() async {
     debugPrint('[Firebase] Error al inicializar: $e\n$st');
   }
   await NotificationService.initialize();
+  unawaited(NotificationService().scheduleDailySummary());
   unawaited(MobileAds.instance.initialize());
   runApp(
     ChangeNotifierProvider.value(

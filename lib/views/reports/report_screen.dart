@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/app_settings.dart';
 import '../../services/finance_service.dart';
+import '../../widgets/ad_banner.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -15,6 +17,27 @@ class ReportScreen extends StatefulWidget {
 class _ReportScreenState extends State<ReportScreen> {
   final _svc = FinanceService();
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+
+  void _shareReport({
+    required double income,
+    required double expense,
+    required double net,
+    required List<FinanceTransaction> transactions,
+    required AppSettingsProvider s,
+  }) {
+    final monthFmt = DateFormat('MMMM yyyy', 'es');
+    final sym = s.currencySymbol;
+    final buf = StringBuffer();
+    buf.writeln('📊 Reporte BizPulse — ${monthFmt.format(_month).toUpperCase()}');
+    buf.writeln();
+    buf.writeln('💚 Ingresos:  $sym ${income.toStringAsFixed(0)}');
+    buf.writeln('🔴 Gastos:    $sym ${expense.toStringAsFixed(0)}');
+    buf.writeln('📈 Balance:   $sym ${net.toStringAsFixed(0)}');
+    buf.writeln('🔢 Transacciones: ${transactions.length}');
+    buf.writeln();
+    buf.writeln('— Generado con BizPulse');
+    SharePlus.instance.share(ShareParams(text: buf.toString()));
+  }
 
   void _prevMonth() => setState(() =>
       _month = DateTime(_month.year, _month.month - 1));
@@ -33,7 +56,6 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppSettingsProvider>();
     final monthFmt = DateFormat('MMMM yyyy', 'es');
 
     return Scaffold(
@@ -52,6 +74,7 @@ class _ReportScreenState extends State<ReportScreen> {
           }
           final all = snap.data ?? [];
           final current = _filterMonth(all, _month);
+          final settings = context.watch<AppSettingsProvider>();
           final prior = _filterMonth(
               all, DateTime(_month.year, _month.month - 1));
 
@@ -63,8 +86,23 @@ class _ReportScreenState extends State<ReportScreen> {
           final priorNet = priorIncome - priorExpense;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
             children: [
+              // Botón compartir
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => _shareReport(
+                    income: income,
+                    expense: expense,
+                    net: net,
+                    transactions: current,
+                    s: settings,
+                  ),
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  label: const Text('Compartir'),
+                ),
+              ),
               // Month selector
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -142,6 +180,8 @@ class _ReportScreenState extends State<ReportScreen> {
               _buildComparison(
                   income, priorIncome, expense, priorExpense, net, priorNet,
                   settings),
+              const SizedBox(height: 24),
+              const Center(child: AdBannerWidget()),
             ],
           );
         },

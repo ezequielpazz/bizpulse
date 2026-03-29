@@ -7,6 +7,8 @@ import '../../models/supply.dart';
 import '../../providers/app_settings.dart';
 import '../../services/appointment_service.dart';
 import '../../services/supply_service.dart';
+import '../../services/finance_service.dart';
+import '../../models/transaction_model.dart';
 import '../../widgets/ad_banner.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -61,6 +63,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final s = context.watch<AppSettingsProvider>();
     final today = DateTime.now();
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _quickIncome,
+        icon: const Icon(Icons.add),
+        label: const Text('Cobro rápido'),
+        backgroundColor: Colors.green.shade700,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async => setState(() {}),
@@ -83,6 +91,118 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               const Center(child: AdBannerWidget()),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Cobro rápido ───────────────────────────────────────────────────────────
+
+  Future<void> _quickIncome() async {
+    final s = context.read<AppSettingsProvider>();
+    final amountCtrl = TextEditingController();
+    final descCtrl = TextEditingController(text: 'Servicio');
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Cobro rápido',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: amountCtrl,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Monto *',
+                    prefixText: '${s.currencySymbol} ',
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Ingresá el monto';
+                    final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                    if (n == null || n <= 0) return 'Monto inválido';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setS(() => saving = true);
+                            try {
+                              await FinanceService().create(
+                                type: TransactionType.income,
+                                amount: double.parse(
+                                    amountCtrl.text.trim().replaceAll(',', '.')),
+                                description: descCtrl.text.trim().isEmpty
+                                    ? 'Servicio'
+                                    : descCtrl.text.trim(),
+                                date: DateTime.now(),
+                              );
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        '✓ Cobro de ${s.currencySymbol} ${amountCtrl.text.trim()} registrado'),
+                                    backgroundColor: Colors.green.shade700,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setS(() => saving = false);
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
+                              }
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.check),
+                    label: Text(saving ? 'Guardando...' : 'Registrar cobro'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -14,6 +14,11 @@ class NotificationService {
   static const _channelName = 'Recordatorios de turnos';
   static const _channelDesc = 'Avisos antes de cada turno';
 
+  static const _dailyChannelId = 'bizpulse_daily';
+  static const _dailyChannelName = 'Resumen diario';
+  static const _dailyChannelDesc = 'Notificación matutina con los turnos del día';
+  static const _dailyNotifId = 88888;
+
   // ── Inicialización estática (llamar con await en main()) ───────────────────
 
   static Future<void> initialize() => NotificationService()._init();
@@ -31,7 +36,7 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
-    // Canal de alta prioridad
+    // Canal de alta prioridad (recordatorios de turnos)
     const channel = AndroidNotificationChannel(
       _channelId,
       _channelName,
@@ -42,6 +47,18 @@ class NotificationService {
       showBadge: true,
     );
     await androidPlugin?.createNotificationChannel(channel);
+
+    // Canal resumen diario
+    const dailyChannel = AndroidNotificationChannel(
+      _dailyChannelId,
+      _dailyChannelName,
+      description: _dailyChannelDesc,
+      importance: Importance.defaultImportance,
+      playSound: false,
+      enableVibration: false,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(dailyChannel);
 
     // Permisos Android 13+
     await androidPlugin?.requestNotificationsPermission();
@@ -146,6 +163,49 @@ class NotificationService {
   }
 
   Future<void> cancelById(int id) => _plugin.cancel(id);
+
+  // ── Resumen diario a las 8 AM ──────────────────────────────────────────────
+
+  /// Programa (o reprograma) la notificación diaria de las 8 AM.
+  /// Se llama una vez al abrir la app — si ya existe, la reemplaza.
+  Future<void> scheduleDailySummary() async {
+    await _init();
+
+    // Calcula el próximo lunes a las 8:00 AM local
+    final now = DateTime.now();
+    var fireAt = DateTime(now.year, now.month, now.day, 8, 0);
+    if (fireAt.isBefore(now)) {
+      fireAt = fireAt.add(const Duration(days: 1));
+    }
+
+    final scheduled = tz.TZDateTime.from(fireAt.toUtc(), tz.UTC);
+
+    await _plugin.zonedSchedule(
+      _dailyNotifId,
+      '¡Buenos días! ☀️',
+      'Revisá tus turnos de hoy en BizPulse.',
+      scheduled,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _dailyChannelId,
+          _dailyChannelName,
+          channelDescription: _dailyChannelDesc,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          enableVibration: false,
+          playSound: false,
+          channelShowBadge: true,
+          styleInformation: const BigTextStyleInformation(
+            'Abrí BizPulse para ver tu agenda del día.',
+          ),
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelDailySummary() => _plugin.cancel(_dailyNotifId);
 
   // ── Test: notificación en 1 minuto ─────────────────────────────────────────
 

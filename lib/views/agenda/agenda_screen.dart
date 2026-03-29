@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/appointment.dart';
 import '../../models/service_model.dart';
 import '../../providers/app_settings.dart';
@@ -74,6 +75,25 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  Future<void> _sendWhatsApp(Appointment a) async {
+    final hhmm = DateFormat.Hm().format(a.when);
+    final date = DateFormat('dd/MM/yyyy').format(a.when);
+    final service = (a.service?.isNotEmpty ?? false) ? ' para ${a.service}' : '';
+    final msg = Uri.encodeComponent(
+      'Hola ${a.clientName}! 👋 Te recuerdo tu turno$service el $date a las $hhmm hs. ¡Te esperamos! — BizPulse',
+    );
+    final uri = Uri.parse('https://wa.me/?text=$msg');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp no está instalado')),
+        );
+      }
+    }
+  }
+
   Widget _tile(Appointment a) {
     final hhmm = DateFormat.Hm().format(a.when);
     final service = (a.service?.isNotEmpty ?? false) ? ' · ${a.service}' : '';
@@ -82,9 +102,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
       leading: const Icon(Icons.event),
       title: Text(a.clientName),
       subtitle: Text('$hhmm$service$price'),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
-        onPressed: () => _confirmDelete(a.id),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+            tooltip: 'Recordatorio por WhatsApp',
+            onPressed: () => _sendWhatsApp(a),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDelete(a.id),
+          ),
+        ],
       ),
     );
   }

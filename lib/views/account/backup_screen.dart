@@ -1,7 +1,9 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/backup_service.dart';
+import '../auth/login_screen.dart';
 
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key});
@@ -30,9 +32,44 @@ class _BackupScreenState extends State<BackupScreen> {
     });
   }
 
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+
+  /// Devuelve true si hay sesión activa. Si no, muestra diálogo y devuelve false.
+  bool _requireAuth() {
+    if (FirebaseAuth.instance.currentUser != null) return true;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Sesión requerida'),
+        content: const Text(
+          'El backup usa tu cuenta para identificar tus datos.\n\n'
+          'Iniciá sesión para poder exportar o importar.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: const Text('Iniciar sesión'),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
+
   // ── Export ──────────────────────────────────────────────────────────────────
 
   Future<void> _export() async {
+    if (!_requireAuth()) return;
     final messages = ValueNotifier<List<String>>([]);
 
     // Show progress dialog
@@ -101,6 +138,7 @@ class _BackupScreenState extends State<BackupScreen> {
   // ── Import ──────────────────────────────────────────────────────────────────
 
   Future<void> _import() async {
+    if (!_requireAuth()) return;
     // Confirm before proceeding
     final confirmed = await showDialog<bool>(
       context: context,

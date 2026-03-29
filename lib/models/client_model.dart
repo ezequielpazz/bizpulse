@@ -7,6 +7,7 @@ class ClientModel {
   final DateTime? lastVisit;
   final int totalVisits;
   final double totalSpent;
+  final String? photoPath; // ruta local a la foto del cliente
 
   const ClientModel({
     required this.id,
@@ -17,6 +18,7 @@ class ClientModel {
     this.lastVisit,
     this.totalVisits = 0,
     this.totalSpent = 0,
+    this.photoPath,
   });
 
   Map<String, dynamic> toMap() => {
@@ -27,6 +29,7 @@ class ClientModel {
         'lastVisitMs': lastVisit?.millisecondsSinceEpoch,
         'totalVisits': totalVisits,
         'totalSpent': totalSpent,
+        'photoPath': photoPath,
       };
 
   factory ClientModel.fromMap(String id, Map<String, dynamic> m) => ClientModel(
@@ -40,6 +43,7 @@ class ClientModel {
             : null,
         totalVisits: (m['totalVisits'] as num?)?.toInt() ?? 0,
         totalSpent: (m['totalSpent'] as num?)?.toDouble() ?? 0,
+        photoPath: m['photoPath'] as String?,
       );
 
   ClientModel copyWith({
@@ -50,6 +54,7 @@ class ClientModel {
     DateTime? lastVisit,
     int? totalVisits,
     double? totalSpent,
+    String? photoPath,
   }) =>
       ClientModel(
         id: id,
@@ -60,5 +65,6 @@ class ClientModel {
         lastVisit: lastVisit ?? this.lastVisit,
         totalVisits: totalVisits ?? this.totalVisits,
         totalSpent: totalSpent ?? this.totalSpent,
+        photoPath: photoPath ?? this.photoPath,
       );
 }

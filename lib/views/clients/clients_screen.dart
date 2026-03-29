@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../models/client_model.dart';
 import '../../services/client_service.dart';
 
@@ -85,6 +88,22 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
   }
 
+  Widget _clientAvatar(ClientModel c, {double radius = 24}) {
+    if (c.photoPath != null && c.photoPath!.isNotEmpty) {
+      final file = File(c.photoPath!);
+      if (file.existsSync()) {
+        return CircleAvatar(
+          radius: radius,
+          backgroundImage: FileImage(file),
+        );
+      }
+    }
+    return CircleAvatar(
+      radius: radius,
+      child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,7 +170,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                               },
                               onDismissed: (_) => _delete(c),
                               child: ListTile(
-                                leading: CircleAvatar(child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?')),
+                                leading: _clientAvatar(c, radius: 20),
                                 title: Text(c.name),
                                 subtitle: Text(c.phone.isEmpty ? 'Sin teléfono' : c.phone),
                                 trailing: Column(
@@ -181,6 +200,22 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
 // ── Detail / Edit sheet ─────────────────────────────────────────────────────
 
+Widget _buildAvatar(ClientModel c, {double radius = 28}) {
+  if (c.photoPath != null && c.photoPath!.isNotEmpty) {
+    final file = File(c.photoPath!);
+    if (file.existsSync()) {
+      return CircleAvatar(radius: radius, backgroundImage: FileImage(file));
+    }
+  }
+  return CircleAvatar(
+    radius: radius,
+    child: Text(
+      c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+      style: TextStyle(fontSize: radius * 0.75),
+    ),
+  );
+}
+
 class _DetailSheet extends StatelessWidget {
   final ClientModel client;
   final ClientService svc;
@@ -199,7 +234,7 @@ class _DetailSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(radius: 28, child: Text(client.name.isNotEmpty ? client.name[0].toUpperCase() : '?', style: const TextStyle(fontSize: 22))),
+              _buildAvatar(client, radius: 28),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -273,6 +308,7 @@ class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _email;
   late final TextEditingController _notes;
   bool _saving = false;
+  String? _photoPath;
 
   @override
   void initState() {
@@ -281,12 +317,26 @@ class _EditSheetState extends State<_EditSheet> {
     _phone = TextEditingController(text: widget.existing?.phone ?? '');
     _email = TextEditingController(text: widget.existing?.email ?? '');
     _notes = TextEditingController(text: widget.existing?.notes ?? '');
+    _photoPath = widget.existing?.photoPath;
   }
 
   @override
   void dispose() {
     _name.dispose(); _phone.dispose(); _email.dispose(); _notes.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 400);
+    if (picked == null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final id = widget.existing?.id.isNotEmpty == true
+        ? widget.existing!.id
+        : DateTime.now().millisecondsSinceEpoch.toString();
+    final dest = '${dir.path}/client_$id.jpg';
+    await File(picked.path).copy(dest);
+    if (mounted) setState(() => _photoPath = dest);
   }
 
   Future<void> _save() async {
@@ -301,6 +351,7 @@ class _EditSheetState extends State<_EditSheet> {
       lastVisit: widget.existing?.lastVisit,
       totalVisits: widget.existing?.totalVisits ?? 0,
       totalSpent: widget.existing?.totalSpent ?? 0,
+      photoPath: _photoPath,
     );
     try {
       if (widget.existing == null) {
@@ -335,6 +386,35 @@ class _EditSheetState extends State<_EditSheet> {
           children: [
             Text(widget.existing == null ? 'Nuevo cliente' : 'Editar cliente',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            // Foto de perfil
+            Center(
+              child: GestureDetector(
+                onTap: _pickPhoto,
+                child: Stack(
+                  children: [
+                    _photoPath != null && File(_photoPath!).existsSync()
+                        ? CircleAvatar(
+                            radius: 40,
+                            backgroundImage: FileImage(File(_photoPath!)),
+                          )
+                        : const CircleAvatar(
+                            radius: 40,
+                            child: Icon(Icons.person, size: 40),
+                          ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _name,
