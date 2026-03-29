@@ -7,6 +7,7 @@ import '../../models/supply.dart';
 import '../../providers/app_settings.dart';
 import '../../services/appointment_service.dart';
 import '../../services/supply_service.dart';
+import '../../widgets/ad_banner.dart';
 
 class DashboardScreen extends StatefulWidget {
   final void Function(int tabIndex) onNavigate;
@@ -19,9 +20,18 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _proBannerDismissed = false;
 
+  // Streams cacheados: se crean UNA sola vez y reutilizan en todos los builders
+  late final Stream<List<Appointment>> _todayStream;
+  late final Stream<List<Appointment>> _nextStream;
+  late final Stream<List<Supply>> _supplyStream;
+
   @override
   void initState() {
     super.initState();
+    final svc = AppointmentService();
+    _todayStream = svc.streamForDay(DateTime.now()).asBroadcastStream();
+    _nextStream = svc.streamUpcoming(limit: 1).asBroadcastStream();
+    _supplyStream = SupplyService().streamAll().asBroadcastStream();
     _loadBannerState();
   }
 
@@ -70,6 +80,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 _proBanner(),
               ],
+              const SizedBox(height: 16),
+              const Center(child: AdBannerWidget()),
             ],
           ),
         ),
@@ -114,7 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _todayCard(AppSettingsProvider s, DateTime today) {
     return StreamBuilder<List<Appointment>>(
-      stream: AppointmentService().streamForDay(today),
+      stream: _todayStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return _shimmer(120);
@@ -180,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _cajaCard(AppSettingsProvider s, DateTime today) {
     return StreamBuilder<List<Appointment>>(
-      stream: AppointmentService().streamForDay(today),
+      stream: _todayStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return _shimmer(80);
@@ -210,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _lowStockCard() {
     return StreamBuilder<List<Supply>>(
-      stream: SupplyService().streamAll(),
+      stream: _supplyStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting ||
             snap.data == null) {
@@ -248,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _nextCard(AppSettingsProvider s) {
     return StreamBuilder<List<Appointment>>(
-      stream: AppointmentService().streamUpcoming(limit: 1),
+      stream: _nextStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return _shimmer(80);

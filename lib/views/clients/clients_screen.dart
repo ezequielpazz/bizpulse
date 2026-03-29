@@ -72,8 +72,17 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 
   Future<void> _delete(ClientModel client) async {
-    await _svc.delete(client.id);
-    _load();
+    try {
+      await _svc.delete(client.id);
+      if (!mounted) return;
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: $e')),
+      );
+      _load(); // recargar para revertir el swipe en la UI
+    }
   }
 
   @override

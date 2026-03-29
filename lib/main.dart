@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -21,22 +23,23 @@ Future<void> main() async {
     debugPrint('[Firebase] Error al inicializar: $e\n$st');
   }
   await NotificationService.initialize();
+  unawaited(MobileAds.instance.initialize());
   runApp(
     ChangeNotifierProvider.value(
       value: settings,
-      child: const NavajasLatinasApp(),
+      child: const BizPulseApp(),
     ),
   );
 }
 
-class NavajasLatinasApp extends StatefulWidget {
-  const NavajasLatinasApp({super.key});
+class BizPulseApp extends StatefulWidget {
+  const BizPulseApp({super.key});
 
   @override
-  State<NavajasLatinasApp> createState() => _NavajasLatinasAppState();
+  State<BizPulseApp> createState() => _BizPulseAppState();
 }
 
-class _NavajasLatinasAppState extends State<NavajasLatinasApp>
+class _BizPulseAppState extends State<BizPulseApp>
     with WidgetsBindingObserver {
   final _navKey = GlobalKey<NavigatorState>();
   DateTime? _backgroundedAt;

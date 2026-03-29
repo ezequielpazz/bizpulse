@@ -51,3 +51,8 @@ android/app/key.properties
 android/impro-release.jks
 android/app/impro-release.jks
 *.jks
+
+# Variables de entorno y archivos sensibles adicionales
+*.keystore
+.env
+.env.*
