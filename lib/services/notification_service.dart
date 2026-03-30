@@ -1,3 +1,4 @@
+import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -11,6 +12,7 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _inited = false;
+  bool _canExactAlarm = true;
 
   static const _channelId = 'bizpulse_reminders';
   static const _channelName = 'Recordatorios de turnos';
@@ -58,12 +60,12 @@ class NotificationService {
     );
     await androidPlugin?.createNotificationChannel(channel);
 
-    // Canal resumen diario
+    // Canal resumen diario (high para sobrevivir en Xiaomi/OPPO/Vivo)
     const dailyChannel = AndroidNotificationChannel(
       _dailyChannelId,
       _dailyChannelName,
       description: _dailyChannelDesc,
-      importance: Importance.defaultImportance,
+      importance: Importance.high,
       playSound: false,
       enableVibration: false,
       showBadge: true,
@@ -76,8 +78,29 @@ class NotificationService {
     // Permiso de alarma exacta (Android 12+)
     await androidPlugin?.requestExactAlarmsPermission();
 
+    // Verificar si realmente podemos usar alarmas exactas
+    _canExactAlarm =
+        await androidPlugin?.canScheduleExactNotifications() ?? true;
+
+    // Solicitar exclusión de optimización de batería (Xiaomi/Huawei/OPPO/Vivo)
+    try {
+      final isOptimized = await DisableBatteryOptimization
+          .isBatteryOptimizationDisabled;
+      if (isOptimized != true) {
+        await DisableBatteryOptimization
+            .showDisableBatteryOptimizationSettings();
+      }
+    } catch (e) {
+      debugPrint('[Notif] Battery optimization check failed: $e');
+    }
+
     _inited = true;
   }
+
+  /// Usa alarma exacta si el dispositivo lo permite, sino inexacta como fallback.
+  AndroidScheduleMode get _exactMode => _canExactAlarm
+      ? AndroidScheduleMode.exactAllowWhileIdle
+      : AndroidScheduleMode.inexactAllowWhileIdle;
 
   // ── Programar recordatorio ─────────────────────────────────────────────────
 
@@ -118,7 +141,7 @@ class NotificationService {
           styleInformation: BigTextStyleInformation(''),
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: _exactMode,
     );
   }
 
@@ -200,8 +223,8 @@ class NotificationService {
           _dailyChannelId,
           _dailyChannelName,
           channelDescription: _dailyChannelDesc,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
+          importance: Importance.high,
+          priority: Priority.high,
           enableVibration: false,
           playSound: false,
           channelShowBadge: true,
