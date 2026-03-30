@@ -1,0 +1,129 @@
+============================================================
+FICHA DE GOOGLE PLAY STORE — BizPulse
+============================================================
+
+NOMBRE DE LA APP:
+BizPulse - Agenda y Gestión
+
+TÍTULO CORTO (30 caracteres max):
+Agenda para tu negocio
+
+────────────────────────────────────────────────────────────
+DESCRIPCIÓN CORTA (80 caracteres max):
+────────────────────────────────────────────────────────────
+Organizá turnos, clientes, finanzas e inventario de tu emprendimiento.
+
+────────────────────────────────────────────────────────────
+DESCRIPCIÓN LARGA (4000 caracteres max):
+────────────────────────────────────────────────────────────
+BizPulse es la app todo-en-uno para profesionales de servicios: peluqueras, barberos, manicuristas, esteticistas, tatuadores, masajistas y cualquier emprendedor que trabaje con turnos y clientes.
+
+AGENDA INTELIGENTE
+- Agendá turnos con fecha, hora y servicio
+- Turnos recurrentes: semanal, quincenal o mensual
+- Recordatorios automáticos antes de cada turno (30 min, 1h, 2h o 24h)
+- Resumen diario a las 8 AM con tus turnos del día
+- Contactá a tus clientes por WhatsApp directo desde la agenda
+
+CLIENTES
+- Ficha completa: nombre, teléfono, email, notas y foto
+- Registro de cumpleaños con notificación automática
+- Historial de visitas y gasto total por cliente
+- Buscador rápido por nombre
+
+FINANZAS Y COBROS
+- Cobro rápido desde el dashboard (monto + descripción)
+- Registro de ingresos y gastos
+- Reporte mensual con balance automático
+- Comparación mes a mes
+- Compartí tu reporte por WhatsApp o cualquier app
+
+INVENTARIO E INSUMOS
+- Controlá tu stock de productos e insumos
+- Alertas de stock bajo
+- Historial de movimientos
+
+CATÁLOGO DE SERVICIOS
+- Armá tu lista de servicios con nombre y precio
+- Al agendar un turno, seleccioná del catálogo y se autocompleta
+
+SEGURIDAD
+- Bloqueo por PIN al volver a la app
+- Backup y restauración de datos
+- Tus datos son privados y solo vos podés acceder
+
+PERSONALIZACIÓN
+- Tema claro, oscuro o automático
+- Colores personalizables
+- Ajuste de tamaño de texto
+- Soporte para español, inglés y portugués
+
+GRATIS
+BizPulse es gratis. Usá todas las funciones sin límite. La app muestra anuncios que nos ayudan a seguir mejorándola.
+
+Descargá BizPulse y empezá a organizar tu negocio como un profesional.
+
+────────────────────────────────────────────────────────────
+CATEGORÍA:
+────────────────────────────────────────────────────────────
+Productividad (principal)
+Negocios (secundaria)
+
+────────────────────────────────────────────────────────────
+ETIQUETAS / KEYWORDS:
+────────────────────────────────────────────────────────────
+agenda, turnos, clientes, peluquería, barbería, manicura,
+emprendimiento, gestión, finanzas, inventario, cobros,
+servicios, profesional, negocio, citas
+
+────────────────────────────────────────────────────────────
+CLASIFICACIÓN DE CONTENIDO:
+────────────────────────────────────────────────────────────
+- Cuestionario IARC: Sin violencia, sin contenido sexual,
+  sin lenguaje ofensivo, sin sustancias, sin apuestas.
+- Resultado esperado: PEGI 3 / Everyone
+
+────────────────────────────────────────────────────────────
+PAÍSES DE DISTRIBUCIÓN:
+────────────────────────────────────────────────────────────
+Todos (foco inicial: Argentina, Colombia, México, Chile,
+Perú, Ecuador, Uruguay, Paraguay, Bolivia, Brasil)
+
+────────────────────────────────────────────────────────────
+DECLARACIONES REQUERIDAS EN PLAY CONSOLE:
+────────────────────────────────────────────────────────────
+
+1. ANUNCIOS:
+   → Sí, mi app contiene anuncios
+   → Proveedor: Google AdMob
+
+2. PERMISOS SENSIBLES:
+   → SCHEDULE_EXACT_ALARM:
+     "Usamos alarmas exactas para enviar recordatorios
+      de turnos a la hora precisa configurada por el usuario."
+   → REQUEST_IGNORE_BATTERY_OPTIMIZATIONS:
+     "Necesario para que los recordatorios de turnos lleguen
+      a tiempo en dispositivos con optimización agresiva de
+      batería (Xiaomi, Huawei, Samsung, OPPO)."
+
+3. ACCESO A DATOS:
+   → Tipo de datos recopilados: nombre, teléfono, email
+     (solo de clientes del usuario, almacenados en su cuenta)
+   → No se comparten datos con terceros
+   → No se recopilan datos sensibles
+   → URL de política de privacidad: (ver archivo privacy_policy.html)
+
+────────────────────────────────────────────────────────────
+ASSETS NECESARIOS (debes crearlos):
+────────────────────────────────────────────────────────────
+□ Ícono 512x512 PNG (sin transparencia, esquinas redondeadas)
+□ Gráfico destacado 1024x500 PNG
+□ Screenshots teléfono (mín 2, recomendado 4-6):
+  - Dashboard con turnos del día
+  - Agenda con calendario
+  - Lista de clientes
+  - Reporte mensual
+  - Inventario
+  - Cobro rápido
+□ Screenshots tablet 7" (opcional pero recomendado)
+□ Screenshots tablet 10" (opcional)
