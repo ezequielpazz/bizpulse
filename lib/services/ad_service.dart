@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'feature_gate.dart';
 
 /// Servicio centralizado de ads (interstitial + rewarded).
+/// Se desactiva automáticamente si el usuario tiene plan Pro+.
 /// Todos los IDs son de prueba de Google — reemplazar al tener cuenta real.
 class AdService {
   static final AdService _i = AdService._();
@@ -31,8 +33,10 @@ class AdService {
   }
 
   /// Muestra interstitial cada N acciones (no cada vez, para no molestar).
+  /// No muestra nada si el usuario tiene plan Pro+.
   /// Devuelve true si se mostró.
   bool showInterstitialEvery(int n) {
+    if (!FeatureGate.showAds) return false;
     _actionCount++;
     if (_actionCount % n != 0) return false;
     final ad = _interstitial;
@@ -60,7 +64,12 @@ class AdService {
 
   /// Carga y muestra un rewarded video.
   /// [onRewarded] se llama cuando el usuario completó el video.
+  /// Si el usuario tiene plan Pro+, da la recompensa directo sin ad.
   void showRewarded({required VoidCallback onRewarded}) {
+    if (!FeatureGate.showAds) {
+      onRewarded(); // Pro+ no necesita ver ads
+      return;
+    }
     if (_rewarded != null) {
       _showRewarded(onRewarded);
       return;

@@ -10,6 +10,7 @@ import 'providers/app_settings.dart';
 import 'services/ad_service.dart';
 import 'services/client_service.dart';
 import 'services/notification_service.dart';
+import 'services/subscription_service.dart';
 import 'views/splash/splash_screen.dart';
 
 Future<void> main() async {
@@ -30,9 +31,14 @@ Future<void> main() async {
     AdService().preloadInterstitial();
   }));
   unawaited(_checkBirthdays());
+  final subscriptions = SubscriptionService();
+  unawaited(subscriptions.initialize());
   runApp(
-    ChangeNotifierProvider.value(
-      value: settings,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: subscriptions),
+      ],
       child: const BizPulseApp(),
     ),
   );

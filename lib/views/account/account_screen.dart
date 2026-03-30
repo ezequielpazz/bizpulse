@@ -1,8 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../../models/user_plan.dart';
 import '../../services/user_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/subscription_service.dart';
 import '../auth/login_screen.dart';
+import '../plans/plans_screen.dart';
 import 'backup_screen.dart';
 import 'settings_screen.dart';
 import '../legal/privacy_policy_screen.dart';
@@ -217,6 +221,51 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
 
+                // Plan / Suscripción
+                Consumer<SubscriptionService>(
+                  builder: (_, sub, __) {
+                    final plan = sub.currentPlan;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        plan == AppPlan.enterprise
+                            ? Icons.diamond_rounded
+                            : plan == AppPlan.pro
+                                ? Icons.star_rounded
+                                : Icons.rocket_launch_outlined,
+                        color: plan.isPaid ? Colors.amber : Colors.orangeAccent,
+                      ),
+                      title: const Text('Plan / Suscripción'),
+                      subtitle: Text(
+                        'Plan actual: ${plan.label} (${plan.priceLabel})',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: plan.isPaid
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                plan.label,
+                                style: const TextStyle(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PlansScreen()),
+                      ),
+                    );
+                  },
+                ),
+
                 // Política de privacidad
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -240,13 +289,6 @@ class _AccountScreenState extends State<AccountScreen> {
                     onPressed: _loading ? null : _logout,
                     label: const Text('Cerrar sesión'),
                   ),
-                ),
-
-                const SizedBox(height: 24),
-                const Text(
-                  'Próximamente:\n- Cambiar foto\n- Info de negocio\n- Plan / Suscripción',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.white54),
                 ),
               ],
             ),

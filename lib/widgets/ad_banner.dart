@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/feature_gate.dart';
 
 /// Banner publicitario de AdMob.
 ///
+/// Se oculta automáticamente si el usuario tiene plan Pro o superior.
 /// Usa IDs de prueba de Google por defecto.
 /// Cuando tengas cuenta AdMob real, reemplazá [_adUnitId] con tu Unit ID.
 class AdBannerWidget extends StatefulWidget {
@@ -22,7 +24,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // No cargar ad si el usuario paga
+    if (FeatureGate.showAds) {
+      _load();
+    }
   }
 
   void _load() {
@@ -50,6 +55,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!FeatureGate.showAds) return const SizedBox.shrink();
     if (!_loaded || _ad == null) return const SizedBox.shrink();
     return SizedBox(
       width: _ad!.size.width.toDouble(),
