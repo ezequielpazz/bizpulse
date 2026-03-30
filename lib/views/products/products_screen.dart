@@ -333,6 +333,9 @@ class _ProductFormState extends State<_ProductForm> {
                   if (parsed == null || parsed < 0) {
                     return 'Ingresá un precio válido';
                   }
+                  if (parsed > 9999999) {
+                    return 'El precio es demasiado alto';
+                  }
                   return null;
                 },
               ),
@@ -347,9 +350,10 @@ class _ProductFormState extends State<_ProductForm> {
                       keyboardType: TextInputType.number,
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Requerido';
-                        if (int.tryParse(v.trim()) == null) {
-                          return 'Número entero';
-                        }
+                        final n = int.tryParse(v.trim());
+                        if (n == null) return 'Número entero';
+                        if (n < 0) return 'No puede ser negativo';
+                        if (n > 99999) return 'Cantidad demasiado alta';
                         return null;
                       },
                     ),

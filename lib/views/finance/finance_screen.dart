@@ -209,7 +209,24 @@ class _FinanceScreenState extends State<FinanceScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                  const SizedBox(height: 12),
+                  Text('Error: ${snap.error}',
+                      style: const TextStyle(color: Colors.white54, fontSize: 13),
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() {}),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
           }
 
           final items = snap.data ?? [];
@@ -218,9 +235,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
             children: [
               _buildSummary(items, settings),
               if (items.isEmpty)
-                const Expanded(
+                Expanded(
                   child: Center(
-                    child: Text('No hay transacciones. Agregá la primera.'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long, size: 64, color: Colors.white24),
+                        const SizedBox(height: 12),
+                        const Text('Sin transacciones aún',
+                            style: TextStyle(fontSize: 16, color: Colors.white54)),
+                        const SizedBox(height: 4),
+                        const Text('Registrá tu primer ingreso o gasto',
+                            style: TextStyle(fontSize: 13, color: Colors.white30)),
+                      ],
+                    ),
                   ),
                 )
               else

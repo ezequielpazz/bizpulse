@@ -77,16 +77,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               _header(s),
               const SizedBox(height: 16),
-              _todayCard(s, today),
+              _fadeIn(delay: 0, child: _todayCard(s, today)),
               const SizedBox(height: 12),
-              _cajaCard(s, today),
+              _fadeIn(delay: 80, child: _cajaCard(s, today)),
               const SizedBox(height: 12),
-              _lowStockCard(),
+              _fadeIn(delay: 160, child: _lowStockCard()),
               const SizedBox(height: 12),
-              _nextCard(s),
+              _fadeIn(delay: 240, child: _nextCard(s)),
               if (!_proBannerDismissed) ...[
                 const SizedBox(height: 12),
-                _proBanner(),
+                _fadeIn(delay: 320, child: _proBanner()),
               ],
               const SizedBox(height: 16),
               const Center(child: AdBannerWidget()),
@@ -94,6 +94,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ── Animación de entrada staggered ─────────────────────────────────────────
+
+  Widget _fadeIn({required int delay, required Widget child}) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + delay),
+      curve: Curves.easeOut,
+      builder: (_, value, ch) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 16 * (1 - value)),
+          child: ch,
+        ),
+      ),
+      child: child,
     );
   }
 
@@ -138,6 +156,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (v == null || v.trim().isEmpty) return 'Ingresá el monto';
                     final n = double.tryParse(v.trim().replaceAll(',', '.'));
                     if (n == null || n <= 0) return 'Monto inválido';
+                    if (n > 9999999) return 'Monto demasiado alto';
                     return null;
                   },
                 ),

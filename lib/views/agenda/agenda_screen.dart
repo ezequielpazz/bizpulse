@@ -20,6 +20,7 @@ class AgendaScreen extends StatefulWidget {
 
 class _AgendaScreenState extends State<AgendaScreen> {
   final _svc = AppointmentService();
+  final _clientSvc = ClientService();
   DateTime _selectedDay = DateTime.now();
   bool _weekMode = false;
   late DateTime _weekStart;
@@ -75,22 +76,46 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  /// Busca el teléfono del cliente por nombre y abre WhatsApp directo.
+  /// Si no encuentra teléfono, abre WhatsApp con selector de contacto.
   Future<void> _sendWhatsApp(Appointment a) async {
     final hhmm = DateFormat.Hm().format(a.when);
     final date = DateFormat('dd/MM/yyyy').format(a.when);
     final service = (a.service?.isNotEmpty ?? false) ? ' para ${a.service}' : '';
-    final msg = Uri.encodeComponent(
-      'Hola ${a.clientName}! 👋 Te recuerdo tu turno$service el $date a las $hhmm hs. ¡Te esperamos! — BizPulse',
-    );
-    final uri = Uri.parse('https://wa.me/?text=$msg');
+    final msg = 'Hola ${a.clientName}! 👋 Te recuerdo tu turno$service el $date a las $hhmm hs. ¡Te esperamos! — BizPulse';
+    final encodedMsg = Uri.encodeComponent(msg);
+
+    // Buscar teléfono del cliente registrado
+    String? phone;
+    try {
+      final clients = await _clientSvc.getByName(a.clientName);
+      if (clients.isNotEmpty && clients.first.phone.isNotEmpty) {
+        // Limpiar número: solo dígitos, agregar código de país si no tiene
+        phone = clients.first.phone.replaceAll(RegExp(r'[^\d+]'), '');
+        if (!phone.startsWith('+')) {
+          // Si empieza con 0, sacar el 0 y agregar +54 (Argentina default)
+          if (phone.startsWith('0')) phone = phone.substring(1);
+          // Si no tiene código de país, agregar +54 (configurable a futuro)
+          if (phone.length <= 12) phone = '54$phone';
+        } else {
+          phone = phone.substring(1); // sacar el +
+        }
+      }
+    } catch (_) {
+      // Si falla la búsqueda, sigue sin número
+    }
+
+    final uri = phone != null
+        ? Uri.parse('https://wa.me/$phone?text=$encodedMsg')
+        : Uri.parse('https://wa.me/?text=$encodedMsg');
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('WhatsApp no está instalado')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WhatsApp no está instalado')),
+      );
     }
   }
 
@@ -290,11 +315,41 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snap.hasError) {
-                  return Center(child: Text('Error: ${snap.error}'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                        const SizedBox(height: 12),
+                        Text('Error: ${snap.error}',
+                            style: const TextStyle(color: Colors.white54, fontSize: 13),
+                            textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => setState(() {}),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
                 final items = snap.data ?? const [];
                 if (items.isEmpty) {
-                  return const Center(child: Text('No hay turnos en este día.'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.event_available, size: 64, color: Colors.white24),
+                        const SizedBox(height: 12),
+                        const Text('No hay turnos en este día',
+                            style: TextStyle(fontSize: 16, color: Colors.white54)),
+                        const SizedBox(height: 4),
+                        const Text('Tocá + para agendar uno nuevo',
+                            style: TextStyle(fontSize: 13, color: Colors.white30)),
+                      ],
+                    ),
+                  );
                 }
                 return ListView.separated(
                   itemCount: items.length,

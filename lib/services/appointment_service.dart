@@ -13,45 +13,40 @@ class AppointmentService {
         .collection('appointments');
   }
 
-  /// Stream de TODOS los turnos del usuario logueado, ordenados por fecha,
-  /// y luego filtramos por el día seleccionado en memoria.
+  /// Stream de turnos para un día específico — filtra directo en Firestore
+  /// para no bajar todos los documentos del usuario.
   Stream<List<Appointment>> streamForDay(DateTime dayLocal) {
     final col = _col;
     if (col == null) return const Stream<List<Appointment>>.empty();
 
     final dayStartLocal = DateTime(dayLocal.year, dayLocal.month, dayLocal.day);
     final dayEndLocal = dayStartLocal.add(const Duration(days: 1));
+    final startMs = dayStartLocal.toUtc().millisecondsSinceEpoch;
+    final endMs = dayEndLocal.toUtc().millisecondsSinceEpoch;
 
     return col
+        .where('whenMs', isGreaterThanOrEqualTo: startMs)
+        .where('whenMs', isLessThan: endMs)
         .orderBy('whenMs')
         .snapshots()
-        .map((snap) {
-      final all = snap.docs
-          .map((d) => Appointment.fromMap(d.id, d.data()))
-          .toList();
-
-      // filtramos en memoria sólo los del día seleccionado
-      return all.where((appt) {
-        final t = appt.when; // ya viene en local time gracias fromMap
-        return (t.isAfter(dayStartLocal) || t.isAtSameMomentAs(dayStartLocal))
-            && t.isBefore(dayEndLocal);
-      }).toList();
-    });
+        .map((snap) => snap.docs
+            .map((d) => Appointment.fromMap(d.id, d.data()))
+            .toList());
   }
 
-  /// Próximos turnos desde ahora, ordenados por fecha (filtrado en memoria
-  /// para evitar requerir un índice compuesto en Firestore).
+  /// Próximos turnos desde ahora — filtra directo en Firestore.
   Stream<List<Appointment>> streamUpcoming({int limit = 5}) {
     final col = _col;
     if (col == null) return const Stream<List<Appointment>>.empty();
-    return col.orderBy('whenMs').snapshots().map((snap) {
-      final now = DateTime.now();
-      return snap.docs
-          .map((d) => Appointment.fromMap(d.id, d.data()))
-          .where((a) => a.when.isAfter(now))
-          .take(limit)
-          .toList();
-    });
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+    return col
+        .where('whenMs', isGreaterThan: nowMs)
+        .orderBy('whenMs')
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => Appointment.fromMap(d.id, d.data()))
+            .toList());
   }
 
   /// Crear turno nuevo
