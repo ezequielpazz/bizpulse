@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -26,6 +28,14 @@ class NotificationService {
   Future<void> _init() async {
     if (_inited) return;
     tz.initializeTimeZones();
+
+    // Detectar timezone del dispositivo y setear como local
+    try {
+      final tzName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzName));
+    } catch (e) {
+      debugPrint('[Notif] No se pudo detectar timezone: $e');
+    }
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _plugin.initialize(
@@ -60,7 +70,7 @@ class NotificationService {
     );
     await androidPlugin?.createNotificationChannel(dailyChannel);
 
-    // Permisos Android 13+
+    // Permisos Android 13+ (no bloquea si no está disponible)
     await androidPlugin?.requestNotificationsPermission();
 
     // Permiso de alarma exacta (Android 12+)
@@ -87,7 +97,7 @@ class NotificationService {
         : 'Turno en $minutesBefore min — $clientName';
     const body = 'Recordatorio de BizPulse';
 
-    final scheduled = tz.TZDateTime.from(fireAt.toUtc(), tz.UTC);
+    final scheduled = _toLocalTZ(fireAt);
 
     await _plugin.zonedSchedule(
       id,
@@ -127,7 +137,7 @@ class NotificationService {
     final notifId = int.parse(
       id.replaceAll(RegExp(r'[^0-9]'), '').padLeft(9, '1').substring(0, 9),
     );
-    final scheduled = tz.TZDateTime.from(whenLocal.toUtc(), tz.UTC);
+    final scheduled = _toLocalTZ(whenLocal);
 
     await _plugin.zonedSchedule(
       notifId,
@@ -178,7 +188,7 @@ class NotificationService {
       fireAt = fireAt.add(const Duration(days: 1));
     }
 
-    final scheduled = tz.TZDateTime.from(fireAt.toUtc(), tz.UTC);
+    final scheduled = _toLocalTZ(fireAt);
 
     await _plugin.zonedSchedule(
       _dailyNotifId,
@@ -222,7 +232,7 @@ class NotificationService {
     if (fireAt.isBefore(now)) {
       fireAt = now.add(const Duration(seconds: 5));
     }
-    final scheduled = tz.TZDateTime.from(fireAt.toUtc(), tz.UTC);
+    final scheduled = _toLocalTZ(fireAt);
 
     for (int i = 0; i < names.length; i++) {
       await _plugin.zonedSchedule(
@@ -248,6 +258,24 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  /// Convierte DateTime local a TZDateTime en el timezone del dispositivo.
+  /// Esto garantiza que las notificaciones recurrentes (matchDateTimeComponents)
+  /// respeten el horario local incluso con cambios de horario (DST).
+  tz.TZDateTime _toLocalTZ(DateTime local) {
+    final loc = tz.local;
+    return tz.TZDateTime(
+      loc,
+      local.year,
+      local.month,
+      local.day,
+      local.hour,
+      local.minute,
+      local.second,
+    );
   }
 
   // ── Test: notificación en 1 minuto ─────────────────────────────────────────
