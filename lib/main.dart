@@ -7,6 +7,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/app_settings.dart';
+import 'services/ad_service.dart';
+import 'services/client_service.dart';
 import 'services/notification_service.dart';
 import 'views/splash/splash_screen.dart';
 
@@ -24,13 +26,33 @@ Future<void> main() async {
   }
   await NotificationService.initialize();
   unawaited(NotificationService().scheduleDailySummary());
-  unawaited(MobileAds.instance.initialize());
+  unawaited(MobileAds.instance.initialize().then((_) {
+    AdService().preloadInterstitial();
+  }));
+  unawaited(_checkBirthdays());
   runApp(
     ChangeNotifierProvider.value(
       value: settings,
       child: const BizPulseApp(),
     ),
   );
+}
+
+Future<void> _checkBirthdays() async {
+  try {
+    final clients = await ClientService().getAll();
+    final now = DateTime.now();
+    final names = clients
+        .where((c) =>
+            c.birthday != null &&
+            c.birthday!.month == now.month &&
+            c.birthday!.day == now.day)
+        .map((c) => c.name)
+        .toList();
+    if (names.isNotEmpty) {
+      await NotificationService().scheduleBirthdayNotifs(names);
+    }
+  } catch (_) {}
 }
 
 class BizPulseApp extends StatefulWidget {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/app_settings.dart';
+import '../../services/ad_service.dart';
 import '../../services/finance_service.dart';
 import '../../widgets/ad_banner.dart';
 
@@ -17,6 +18,7 @@ class ReportScreen extends StatefulWidget {
 class _ReportScreenState extends State<ReportScreen> {
   final _svc = FinanceService();
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  bool _comparisonUnlocked = false;
 
   void _shareReport({
     required double income,
@@ -36,7 +38,7 @@ class _ReportScreenState extends State<ReportScreen> {
     buf.writeln('🔢 Transacciones: ${transactions.length}');
     buf.writeln();
     buf.writeln('— Generado con BizPulse');
-    SharePlus.instance.share(ShareParams(text: buf.toString()));
+    Share.share(buf.toString());
   }
 
   void _prevMonth() => setState(() =>
@@ -177,14 +179,58 @@ class _ReportScreenState extends State<ReportScreen> {
                   style:
                       TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 8),
-              _buildComparison(
-                  income, priorIncome, expense, priorExpense, net, priorNet,
-                  settings),
+              if (_comparisonUnlocked)
+                _buildComparison(
+                    income, priorIncome, expense, priorExpense, net, priorNet,
+                    settings)
+              else
+                _lockedComparison(),
               const SizedBox(height: 24),
               const Center(child: AdBannerWidget()),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _lockedComparison() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.lock_outline, size: 36, color: Colors.white30),
+          const SizedBox(height: 12),
+          const Text(
+            '¿Cómo te fue vs el mes pasado?',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Mirá un breve anuncio para desbloquear',
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              AdService().showRewarded(
+                onRewarded: () {
+                  if (mounted) setState(() => _comparisonUnlocked = true);
+                },
+              );
+            },
+            icon: const Icon(Icons.play_circle_outline, size: 20),
+            label: const Text('Ver anuncio'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+          ),
+        ],
       ),
     );
   }

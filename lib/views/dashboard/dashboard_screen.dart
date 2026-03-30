@@ -7,6 +7,7 @@ import '../../models/supply.dart';
 import '../../providers/app_settings.dart';
 import '../../services/appointment_service.dart';
 import '../../services/supply_service.dart';
+import '../../services/ad_service.dart';
 import '../../services/finance_service.dart';
 import '../../models/transaction_model.dart';
 import '../../widgets/ad_banner.dart';
@@ -202,6 +203,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
+                                // Interstitial cada 3 cobros (no cada vez)
+                                AdService().showInterstitialEvery(3);
                               }
                             } catch (e) {
                               setS(() => saving = false);

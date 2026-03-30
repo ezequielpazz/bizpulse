@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../models/supply.dart';
 import '../../services/supply_service.dart';
+import '../../widgets/ad_banner.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -229,11 +230,34 @@ class _InventoryScreenState extends State<InventoryScreen> {
           }
           if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
           final items = snap.data ?? const [];
-          if (items.isEmpty) return const Center(child: Text('Sin insumos. Agregá uno.'));
-          return ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const Divider(height: 0),
-            itemBuilder: (_, i) => _tile(items[i]),
+          if (items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white24),
+                  const SizedBox(height: 12),
+                  const Text('Sin insumos aún', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                  const SizedBox(height: 4),
+                  const Text('Tocá + para agregar el primero', style: TextStyle(fontSize: 13, color: Colors.white30)),
+                ],
+              ),
+            );
+          }
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const Divider(height: 0),
+                  itemBuilder: (_, i) => _tile(items[i]),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: AdBannerWidget(),
+              ),
+            ],
           );
         },
       ),

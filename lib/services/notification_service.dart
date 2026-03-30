@@ -207,6 +207,49 @@ class NotificationService {
 
   Future<void> cancelDailySummary() => _plugin.cancel(_dailyNotifId);
 
+  // ── Cumpleaños ─────────────────────────────────────────────────────────────
+
+  static const _birthdayBaseId = 70000;
+
+  /// Programa notificaciones de cumpleaños para hoy a las 9 AM.
+  /// Recibe lista de nombres de clientes que cumplen hoy.
+  Future<void> scheduleBirthdayNotifs(List<String> names) async {
+    await _init();
+    if (names.isEmpty) return;
+
+    final now = DateTime.now();
+    var fireAt = DateTime(now.year, now.month, now.day, 9, 0);
+    if (fireAt.isBefore(now)) {
+      fireAt = now.add(const Duration(seconds: 5));
+    }
+    final scheduled = tz.TZDateTime.from(fireAt.toUtc(), tz.UTC);
+
+    for (int i = 0; i < names.length; i++) {
+      await _plugin.zonedSchedule(
+        _birthdayBaseId + i,
+        '🎂 ¡Cumpleaños de ${names[i]}!',
+        'Hoy es el cumpleaños de ${names[i]}. ¡Mandále un saludo!',
+        scheduled,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _dailyChannelId,
+            _dailyChannelName,
+            channelDescription: _dailyChannelDesc,
+            importance: Importance.high,
+            priority: Priority.high,
+            enableVibration: true,
+            playSound: true,
+            channelShowBadge: true,
+            styleInformation: BigTextStyleInformation(
+              'Hoy es el cumpleaños de ${names[i]}. ¡Mandále un saludo!',
+            ),
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
   // ── Test: notificación en 1 minuto ─────────────────────────────────────────
 
   static Future<void> scheduleTestIn1Minute() async {

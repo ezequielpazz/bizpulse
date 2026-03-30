@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../models/client_model.dart';
+import '../../widgets/ad_banner.dart';
 import '../../services/client_service.dart';
 
 class ClientsScreen extends StatefulWidget {
@@ -114,6 +115,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
       ),
       body: Column(
         children: [
+          const AdBannerWidget(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -309,6 +311,7 @@ class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _notes;
   bool _saving = false;
   String? _photoPath;
+  DateTime? _birthday;
 
   @override
   void initState() {
@@ -318,6 +321,7 @@ class _EditSheetState extends State<_EditSheet> {
     _email = TextEditingController(text: widget.existing?.email ?? '');
     _notes = TextEditingController(text: widget.existing?.notes ?? '');
     _photoPath = widget.existing?.photoPath;
+    _birthday = widget.existing?.birthday;
   }
 
   @override
@@ -352,6 +356,7 @@ class _EditSheetState extends State<_EditSheet> {
       totalVisits: widget.existing?.totalVisits ?? 0,
       totalSpent: widget.existing?.totalSpent ?? 0,
       photoPath: _photoPath,
+      birthday: _birthday,
     );
     try {
       if (widget.existing == null) {
@@ -439,6 +444,34 @@ class _EditSheetState extends State<_EditSheet> {
               controller: _notes,
               decoration: const InputDecoration(labelText: 'Notas', border: OutlineInputBorder()),
               maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _birthday ?? DateTime(1990, 1, 1),
+                  firstDate: DateTime(1940),
+                  lastDate: DateTime.now(),
+                  helpText: 'Cumpleaños del cliente',
+                );
+                if (picked != null) setState(() => _birthday = picked);
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Cumpleaños',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.cake_outlined),
+                ),
+                child: Text(
+                  _birthday != null
+                      ? '${_birthday!.day}/${_birthday!.month}/${_birthday!.year}'
+                      : 'Sin definir',
+                  style: TextStyle(
+                    color: _birthday != null ? null : Theme.of(context).hintColor,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             SizedBox(

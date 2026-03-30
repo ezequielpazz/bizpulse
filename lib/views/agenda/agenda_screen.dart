@@ -406,6 +406,7 @@ class _NewTurnoDialogState extends State<_NewTurnoDialog> {
   ServiceModel? _selectedService;
   late TimeOfDay _initial;
   late int _remindMin;
+  String _recurrence = 'none'; // none, weekly, biweekly, monthly
 
   @override
   void initState() {
@@ -452,7 +453,7 @@ class _NewTurnoDialogState extends State<_NewTurnoDialog> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      final dt = DateTime(
+      final baseDt = DateTime(
         widget.selectedDay.year,
         widget.selectedDay.month,
         widget.selectedDay.day,
@@ -461,13 +462,40 @@ class _NewTurnoDialogState extends State<_NewTurnoDialog> {
       );
       final clientName = _autoNameCtrl?.text.trim() ?? '';
       final price = double.tryParse(_priceCtrl.text.replaceAll(',', '.'));
-      await widget.svc.create(
-        clientName: clientName,
-        whenLocal: dt,
-        service: _serviceCtrl.text.trim().isEmpty ? null : _serviceCtrl.text.trim(),
-        price: price,
-        remindBeforeMin: _remindMin,
-      );
+      final service = _serviceCtrl.text.trim().isEmpty ? null : _serviceCtrl.text.trim();
+
+      // Calcular fechas según recurrencia
+      final dates = <DateTime>[baseDt];
+      if (_recurrence == 'weekly') {
+        for (int i = 1; i <= 3; i++) {
+          dates.add(baseDt.add(Duration(days: 7 * i)));
+        }
+      } else if (_recurrence == 'biweekly') {
+        for (int i = 1; i <= 3; i++) {
+          dates.add(baseDt.add(Duration(days: 14 * i)));
+        }
+      } else if (_recurrence == 'monthly') {
+        for (int i = 1; i <= 2; i++) {
+          dates.add(DateTime(
+            baseDt.year,
+            baseDt.month + i,
+            baseDt.day,
+            baseDt.hour,
+            baseDt.minute,
+          ));
+        }
+      }
+
+      for (final dt in dates) {
+        await widget.svc.create(
+          clientName: clientName,
+          whenLocal: dt,
+          service: service,
+          price: price,
+          remindBeforeMin: _remindMin,
+        );
+      }
+
       if (_selClient != null) {
         try {
           await widget.clientSvc.incrementVisit(_selClient!.id, price ?? 0);
@@ -645,6 +673,23 @@ class _NewTurnoDialogState extends State<_NewTurnoDialog> {
                           value: 30, child: Text('30 minutos antes')),
                     ],
                     onChanged: (v) => setState(() => _remindMin = v ?? 60),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text('Repetir:'),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: _recurrence,
+                    items: const [
+                      DropdownMenuItem(value: 'none', child: Text('Sin repetir')),
+                      DropdownMenuItem(value: 'weekly', child: Text('Semanal (4 sem)')),
+                      DropdownMenuItem(value: 'biweekly', child: Text('Quincenal (4 veces)')),
+                      DropdownMenuItem(value: 'monthly', child: Text('Mensual (3 meses)')),
+                    ],
+                    onChanged: (v) => setState(() => _recurrence = v ?? 'none'),
                   ),
                 ],
               ),
