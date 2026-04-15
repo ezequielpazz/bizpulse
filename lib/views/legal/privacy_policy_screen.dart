@@ -100,7 +100,7 @@ class _PolicyContent extends StatelessWidget {
           '• Eliminar tu cuenta y todos tus datos asociados contactándonos por '
           'correo electrónico.\n\n'
           'Para ejercer cualquiera de estos derechos escribinos a:\n'
-          'impro.app.soporte@gmail.com',
+          'networklayers49@gmail.com',
         ),
         SizedBox(height: 20),
 
@@ -128,7 +128,7 @@ class _PolicyContent extends StatelessWidget {
         _Body(
           'Si tenés preguntas, dudas o solicitudes relacionadas con tu privacidad, '
           'podés contactarnos en:\n\n'
-          'impro.app.soporte@gmail.com\n\n'
+          'networklayers49@gmail.com\n\n'
           'Respondemos en un plazo máximo de 72 horas hábiles.',
         ),
         SizedBox(height: 32),
