@@ -1,11 +1,11 @@
 {
-    "name": "navajas_latinas_v2",
-    "short_name": "navajas_latinas_v2",
+    "name": "BizPulse - Agenda y Gestión",
+    "short_name": "BizPulse",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Gestioná turnos, clientes, finanzas e inventario de tu negocio.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
