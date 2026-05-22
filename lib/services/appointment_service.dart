@@ -78,6 +78,52 @@ class AppointmentService {
     );
   }
 
+  /// Actualizar notas técnicas del turno (Pro feature)
+  Future<void> updateNotes(String id, String? notes) async {
+    final col = _col ?? (throw StateError('No hay usuario autenticado'));
+    await col.doc(id).update({
+      'notes': notes,
+      'notesUpdatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Marcar que el WhatsApp 24h fue enviado
+  Future<void> markWhatsAppSent(String id) async {
+    final col = _col;
+    if (col == null) return;
+    await col.doc(id).update({'whatsappReminderSent': true});
+  }
+
+  /// Stream de turnos próximas 24-26h sin WhatsApp enviado (para auto-reminder)
+  Stream<List<Appointment>> streamNeedingWhatsApp() {
+    final col = _col;
+    if (col == null) return const Stream<List<Appointment>>.empty();
+    final from = DateTime.now().add(const Duration(hours: 23));
+    final to = DateTime.now().add(const Duration(hours: 26));
+    return col
+        .where('whenMs', isGreaterThanOrEqualTo: from.toUtc().millisecondsSinceEpoch)
+        .where('whenMs', isLessThan: to.toUtc().millisecondsSinceEpoch)
+        .where('whatsappReminderSent', isEqualTo: false)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => Appointment.fromMap(d.id, d.data()))
+            .toList());
+  }
+
+  /// Historial de turnos pasados de un cliente (para mostrar notas previas)
+  Future<List<Appointment>> getHistoryForClient(String clientName) async {
+    final col = _col;
+    if (col == null) return [];
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final snap = await col
+        .where('clientName', isEqualTo: clientName)
+        .where('whenMs', isLessThan: nowMs)
+        .orderBy('whenMs', descending: true)
+        .limit(20)
+        .get();
+    return snap.docs.map((d) => Appointment.fromMap(d.id, d.data())).toList();
+  }
+
   /// Borrar turno
   Future<void> delete(String id) async {
     final col = _col ?? (throw StateError('No hay usuario autenticado'));

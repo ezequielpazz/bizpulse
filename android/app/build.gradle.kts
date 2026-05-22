@@ -39,18 +39,29 @@ android {
         jvmTarget = "17"
     }
 
-    signingConfigs {
-        create("release") {
-            keyAlias = keyProperties["keyAlias"] as String
-            keyPassword = keyProperties["keyPassword"] as String
-            storeFile = file("impro-release.jks")
-            storePassword = keyProperties["storePassword"] as String
+    val hasKeystore = keyPropertiesFile.exists() &&
+        keyProperties["keyAlias"] != null &&
+        keyProperties["keyPassword"] != null &&
+        keyProperties["storePassword"] != null &&
+        file("impro-release.jks").exists()
+
+    if (hasKeystore) {
+        signingConfigs {
+            create("release") {
+                keyAlias = keyProperties["keyAlias"] as String
+                keyPassword = keyProperties["keyPassword"] as String
+                storeFile = file("impro-release.jks")
+                storePassword = keyProperties["storePassword"] as String
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasKeystore)
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
         }
     }
 }

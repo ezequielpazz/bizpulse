@@ -9,8 +9,10 @@ import '../../providers/app_settings.dart';
 import '../../models/client_model.dart';
 import '../../services/appointment_service.dart';
 import '../../services/client_service.dart';
+import '../../services/feature_gate.dart';
 import '../../services/service_catalog_service.dart';
 import '../services/service_catalog_screen.dart';
+import 'appointment_detail_screen.dart';
 
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});
@@ -123,13 +125,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final hhmm = DateFormat.Hm().format(a.when);
     final service = (a.service?.isNotEmpty ?? false) ? ' · ${a.service}' : '';
     final price = (a.price != null) ? ' · \$${a.price!.toStringAsFixed(0)}' : '';
+    final hasNotes = (a.notes?.isNotEmpty ?? false);
     return ListTile(
-      leading: const Icon(Icons.event),
+      leading: Icon(
+        Icons.event,
+        color: _serviceColor(a.service),
+      ),
       title: Text(a.clientName),
       subtitle: Text('$hhmm$service$price'),
+      onTap: () => _openAppointmentDetail(a),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          IconButton(
+            icon: Icon(
+              hasNotes ? Icons.sticky_note_2 : Icons.sticky_note_2_outlined,
+              color: hasNotes ? Colors.amber : null,
+            ),
+            tooltip: 'Notas del turno',
+            onPressed: () => _openAppointmentDetail(a),
+          ),
           IconButton(
             icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
             tooltip: 'Recordatorio por WhatsApp',
@@ -140,6 +155,29 @@ class _AgendaScreenState extends State<AgendaScreen> {
             onPressed: () => _confirmDelete(a.id),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Color por servicio (Pro: cada servicio tiene su color)
+  Color? _serviceColor(String? service) {
+    if (!FeatureGate.canUse(Feature.colorAgenda)) return null;
+    if (service == null || service.isEmpty) return null;
+    // Hash del nombre del servicio → color de paleta
+    final palette = [
+      Colors.blue, Colors.green, Colors.orange, Colors.purple,
+      Colors.teal, Colors.pink, Colors.indigo, Colors.amber,
+      Colors.cyan, Colors.deepOrange,
+    ];
+    final hash = service.toLowerCase().hashCode;
+    return palette[hash.abs() % palette.length];
+  }
+
+  void _openAppointmentDetail(Appointment a) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AppointmentDetailScreen(appointment: a, svc: _svc),
       ),
     );
   }
