@@ -234,29 +234,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Header ─────────────────────────────────────────────────────────────────
 
   Widget _header(AppSettingsProvider s) {
+    final today = DateFormat('EEEE d MMMM', 'es').format(DateTime.now());
     return Row(
       children: [
-        Image.asset('assets/icon/app_icon.png', height: 36),
-        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: CircleAvatar(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            radius: 22,
+            child: Image.asset('assets/icon/app_icon.png', height: 28),
+          ),
+        ),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_greeting(),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              if (s.businessType.isNotEmpty)
-                Text(
-                  s.businessType,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
+              Text(
+                _greeting(),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                today[0].toUpperCase() + today.substring(1),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).hintColor,
+                ),
+              ),
+              if (s.businessType.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
                     color: Theme.of(context)
                         .colorScheme
                         .primary
-                        .withValues(alpha: 0.7),
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    s.businessType,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -440,38 +482,104 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Banner Pro ─────────────────────────────────────────────────────────────
 
   Widget _proBanner() {
-    return Card(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Material(
+      borderRadius: BorderRadius.circular(18),
+      elevation: 0,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF6366F1), // indigo
+              const Color(0xFF8B5CF6), // violet
+              const Color(0xFFEC4899).withValues(alpha: 0.9), // pink
+            ],
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: _showPlansDialog,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  child: Text('¿Querés más?',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.star_rounded,
+                          size: 22, color: Colors.white),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Llevá tu negocio al siguiente nivel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _dismissBanner,
+                      borderRadius: BorderRadius.circular(20),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.close, size: 18, color: Colors.white70),
+                      ),
+                    ),
+                  ],
                 ),
-                InkWell(
-                  onTap: _dismissBanner,
-                  child: const Icon(Icons.close, size: 18),
+                const SizedBox(height: 6),
+                const Text(
+                  'Sync en la nube · Sin anuncios · Backup automático · WhatsApp auto',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Ver planes →',
+                        style: TextStyle(
+                          color: Color(0xFF6366F1),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'desde \$10/mes',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'BizPulse Pro — sync en la nube, sin anuncios, backup automático',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _showPlansDialog,
-              child: const Text('Ver planes'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -533,32 +641,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required VoidCallback onTap,
     required Widget child,
   }) {
-    return Card(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = iconColor ?? Theme.of(context).colorScheme.primary;
+    return Material(
+      color: isDark
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(18),
+      elevation: 0,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.06),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(icon,
-                      size: 14,
-                      color: iconColor ??
-                          Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5)),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(icon, size: 18, color: accent),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : Colors.black.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: Theme.of(context).hintColor,
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               child,
             ],
           ),
@@ -568,13 +709,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _shimmer(double height) {
-    return Card(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(
-        height: height,
-        child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       ),
     );
   }

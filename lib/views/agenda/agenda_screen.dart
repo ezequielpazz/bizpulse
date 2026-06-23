@@ -123,38 +123,177 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   Widget _tile(Appointment a) {
     final hhmm = DateFormat.Hm().format(a.when);
-    final service = (a.service?.isNotEmpty ?? false) ? ' · ${a.service}' : '';
-    final price = (a.price != null) ? ' · \$${a.price!.toStringAsFixed(0)}' : '';
     final hasNotes = (a.notes?.isNotEmpty ?? false);
-    return ListTile(
-      leading: Icon(
-        Icons.event,
-        color: _serviceColor(a.service),
-      ),
-      title: Text(a.clientName),
-      subtitle: Text('$hhmm$service$price'),
-      onTap: () => _openAppointmentDetail(a),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(
-              hasNotes ? Icons.sticky_note_2 : Icons.sticky_note_2_outlined,
-              color: hasNotes ? Colors.amber : null,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent =
+        _serviceColor(a.service) ?? Theme.of(context).colorScheme.primary;
+    final isPast = a.when.isBefore(DateTime.now());
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openAppointmentDetail(a),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
             ),
-            tooltip: 'Notas del turno',
-            onPressed: () => _openAppointmentDetail(a),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // Hora destacada en columna
+                Container(
+                  width: 56,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: isPast ? 0.06 : 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        hhmm,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: isPast
+                              ? Theme.of(context).hintColor
+                              : accent,
+                        ),
+                      ),
+                      Text(
+                        'hs',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: isPast
+                              ? Theme.of(context).hintColor
+                              : accent.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Info principal
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        a.clientName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          decoration:
+                              isPast ? TextDecoration.lineThrough : null,
+                          color: isPast ? Theme.of(context).hintColor : null,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (a.service?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                a.service!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).hintColor,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (a.price != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '\$${a.price!.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Acciones
+                if (hasNotes)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(
+                      Icons.sticky_note_2_rounded,
+                      size: 18,
+                      color: Colors.amber.shade600,
+                    ),
+                  ),
+                _miniAction(
+                  Icons.chat_rounded,
+                  const Color(0xFF25D366),
+                  () => _sendWhatsApp(a),
+                  tooltip: 'WhatsApp',
+                ),
+                _miniAction(
+                  Icons.delete_outline_rounded,
+                  Theme.of(context).colorScheme.error,
+                  () => _confirmDelete(a.id),
+                  tooltip: 'Eliminar',
+                ),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
-            tooltip: 'Recordatorio por WhatsApp',
-            onPressed: () => _sendWhatsApp(a),
+        ),
+      ),
+    );
+  }
+
+  /// Botón de acción mini (32x32) con icono tintado.
+  Widget _miniAction(
+    IconData icon,
+    Color color,
+    VoidCallback onPressed, {
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(a.id),
-          ),
-        ],
+          child: Icon(icon, size: 18, color: color),
+        ),
       ),
     );
   }
