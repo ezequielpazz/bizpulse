@@ -7,6 +7,7 @@ import '../../providers/app_settings.dart';
 import '../../services/ad_service.dart';
 import '../../services/finance_service.dart';
 import '../../widgets/ad_banner.dart';
+import '../../widgets/ui_kit.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -72,13 +73,16 @@ class _ReportScreenState extends State<ReportScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
+            return ErrorState(
+              message: '${snap.error}',
+              onRetry: () => setState(() {}),
+            );
           }
           final all = snap.data ?? [];
           final current = _filterMonth(all, _month);
           final settings = context.watch<AppSettingsProvider>();
-          final prior = _filterMonth(
-              all, DateTime(_month.year, _month.month - 1));
+          final prior =
+              _filterMonth(all, DateTime(_month.year, _month.month - 1));
 
           final income = _sum(current, true);
           final expense = _sum(current, false);
@@ -86,103 +90,110 @@ class _ReportScreenState extends State<ReportScreen> {
           final priorIncome = _sum(prior, true);
           final priorExpense = _sum(prior, false);
           final priorNet = priorIncome - priorExpense;
+          final errorColor = Theme.of(context).colorScheme.error;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
             children: [
-              // Botón compartir
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _shareReport(
-                    income: income,
-                    expense: expense,
-                    net: net,
-                    transactions: current,
-                    s: settings,
-                  ),
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Compartir'),
-                ),
-              ),
-              // Month selector
+              // Month selector + compartir
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left),
+                    icon: const Icon(Icons.chevron_left_rounded),
                     onPressed: _prevMonth,
                   ),
-                  Text(
-                    monthFmt.format(_month).toUpperCase(),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
+                  Expanded(
+                    child: Text(
+                      monthFmt.format(_month).toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.chevron_right,
-                        color: _isFuture() ? Colors.white24 : null),
+                    icon: const Icon(Icons.chevron_right_rounded),
                     onPressed: _isFuture() ? null : _nextMonth,
+                  ),
+                  const SizedBox(width: 4),
+                  MiniAction(
+                    icon: Icons.share_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    tooltip: 'Compartir',
+                    onPressed: () => _shareReport(
+                      income: income,
+                      expense: expense,
+                      net: net,
+                      transactions: current,
+                      s: settings,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Summary cards
               Row(
                 children: [
-                  _card('Ingresos', income, Colors.green, settings),
-                  const SizedBox(width: 8),
-                  _card('Gastos', expense, Colors.red, settings),
+                  _statCard('Ingresos', income, Colors.green, settings,
+                      icon: Icons.arrow_downward_rounded),
+                  const SizedBox(width: 10),
+                  _statCard('Gastos', expense, errorColor, settings,
+                      icon: Icons.arrow_upward_rounded),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  _card(
+                  _statCard(
                     'Balance',
                     net,
-                    net >= 0 ? Colors.greenAccent : Colors.redAccent,
+                    net >= 0 ? Colors.green : errorColor,
                     settings,
                     bold: true,
+                    icon: Icons.account_balance_wallet_rounded,
                   ),
-                  const SizedBox(width: 8),
-                  _card('Transacciones', current.length.toDouble(),
-                      Colors.blueAccent, settings,
-                      isCount: true),
+                  const SizedBox(width: 10),
+                  _statCard(
+                    'Transacciones',
+                    current.length.toDouble(),
+                    Theme.of(context).colorScheme.primary,
+                    settings,
+                    isCount: true,
+                    icon: Icons.receipt_long_rounded,
+                  ),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Weekly bar chart
               if (current.isNotEmpty) ...[
-                const Text('Ingresos por semana',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
+                const SectionTitle('Ingresos por semana',
+                    icon: Icons.bar_chart_rounded),
                 const SizedBox(height: 12),
-                _buildBarChart(current, _month, settings),
-                const SizedBox(height: 20),
+                AppCard(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildBarChart(current, _month, settings),
+                ),
+                const SizedBox(height: 24),
               ],
 
               // Top 3 services
               if (current.any((t) => t.isIncome)) ...[
-                const Text('Top servicios / ingresos',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
-                const SizedBox(height: 8),
+                const SectionTitle('Top servicios / ingresos',
+                    icon: Icons.emoji_events_rounded),
+                const SizedBox(height: 10),
                 _buildTopServices(current, settings),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
               ],
 
               // Comparison vs prior month
-              const Text('Comparación con mes anterior',
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
+              const SectionTitle('Comparación con mes anterior',
+                  icon: Icons.compare_arrows_rounded),
+              const SizedBox(height: 10),
               if (_comparisonUnlocked)
-                _buildComparison(
-                    income, priorIncome, expense, priorExpense, net, priorNet,
-                    settings)
+                _buildComparison(income, priorIncome, expense, priorExpense,
+                    net, priorNet, settings)
               else
                 _lockedComparison(),
               const SizedBox(height: 24),
@@ -195,27 +206,33 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _lockedComparison() {
-    return Container(
+    final amber = Colors.amber.shade700;
+    return AppCard(
+      radius: 18,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         children: [
-          const Icon(Icons.lock_outline, size: 36, color: Colors.white30),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: amber.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.lock_rounded, size: 28, color: amber),
+          ),
           const SizedBox(height: 12),
           const Text(
             '¿Cómo te fue vs el mes pasado?',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Mirá un breve anuncio para desbloquear',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
+          Text(
+            'Mirá un breve anuncio para desbloquear la comparación',
+            style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
+          FilledButton.icon(
             onPressed: () {
               AdService().showRewarded(
                 onRewarded: () {
@@ -223,11 +240,13 @@ class _ReportScreenState extends State<ReportScreen> {
                 },
               );
             },
-            icon: const Icon(Icons.play_circle_outline, size: 20),
+            icon: const Icon(Icons.play_circle_rounded, size: 20),
             label: const Text('Ver anuncio'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade700,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            style: FilledButton.styleFrom(
+              backgroundColor: amber,
+              foregroundColor: Colors.black,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             ),
           ),
         ],
@@ -249,8 +268,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
   // ── Widgets ─────────────────────────────────────────────────────────────────
 
-  Widget _card(String label, double value, Color color,
-      AppSettingsProvider s, {bool bold = false, bool isCount = false}) {
+  Widget _statCard(String label, double value, Color color,
+      AppSettingsProvider s,
+      {bool bold = false, bool isCount = false, IconData? icon}) {
     final text = isCount
         ? '${value.toInt()}'
         : s.stealthMode
@@ -258,23 +278,44 @@ class _ReportScreenState extends State<ReportScreen> {
             : '${s.currencySymbol}${value.toStringAsFixed(0)}';
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(12),
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                color: color,
-                fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 14, color: color),
+                  const SizedBox(width: 5),
+                ],
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 19,
+                  color: color,
+                  fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -285,7 +326,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Widget _buildBarChart(List<FinanceTransaction> txns, DateTime month,
       AppSettingsProvider s) {
-    // Split into 4 pseudo-weeks: days 1-7, 8-14, 15-21, 22-end
+    // Semanas del mes: días 1-7, 8-14, 15-21, 22-fin
     final weeks = [
       [1, 7],
       [8, 14],
@@ -295,28 +336,27 @@ class _ReportScreenState extends State<ReportScreen> {
     final labels = ['S1', 'S2', 'S3', 'S4'];
     final values = weeks.map((w) {
       return txns
-          .where((t) =>
-              t.isIncome &&
-              t.date.day >= w[0] &&
-              t.date.day <= w[1])
+          .where((t) => t.isIncome && t.date.day >= w[0] && t.date.day <= w[1])
           .fold<double>(0, (s, t) => s + t.amount);
     }).toList();
 
     final maxVal = values.reduce((a, b) => a > b ? a : b);
     if (maxVal == 0) {
-      return const Text('Sin ingresos este mes.',
-          style: TextStyle(color: Colors.white54));
+      return Text('Sin ingresos este mes.',
+          style: TextStyle(color: Theme.of(context).hintColor));
     }
 
-    final barH = 100.0;
+    final primary = Theme.of(context).colorScheme.primary;
+    const barH = 100.0;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: List.generate(4, (i) {
         final pct = maxVal > 0 ? values[i] / maxVal : 0.0;
         final h = (pct * barH).clamp(4.0, barH);
+        final isMax = values[i] == maxVal && values[i] > 0;
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -325,24 +365,37 @@ class _ReportScreenState extends State<ReportScreen> {
                     values[i] > 0
                         ? '${s.currencySymbol}${values[i].toStringAsFixed(0)}'
                         : '',
-                    style: const TextStyle(fontSize: 9, color: Colors.white54),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: isMax ? FontWeight.w800 : FontWeight.w500,
+                      color: isMax ? primary : Theme.of(context).hintColor,
+                    ),
                     textAlign: TextAlign.center,
                   ),
-                const SizedBox(height: 2),
-                Container(
+                const SizedBox(height: 4),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
                   height: h,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(4),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        primary,
+                        primary.withValues(alpha: 0.55),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(6)),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(labels[i],
-                    style: const TextStyle(
-                        fontSize: 10, color: Colors.white54)),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).hintColor)),
               ],
             ),
           ),
@@ -351,8 +404,8 @@ class _ReportScreenState extends State<ReportScreen> {
     );
   }
 
-  Widget _buildTopServices(List<FinanceTransaction> txns,
-      AppSettingsProvider s) {
+  Widget _buildTopServices(
+      List<FinanceTransaction> txns, AppSettingsProvider s) {
     final incomes = txns.where((t) => t.isIncome).toList();
     final grouped = <String, double>{};
     for (final t in incomes) {
@@ -363,49 +416,61 @@ class _ReportScreenState extends State<ReportScreen> {
     final top3 = sorted.take(3).toList();
 
     if (top3.isEmpty) {
-      return const Text('Sin datos.',
-          style: TextStyle(color: Colors.white54));
+      return Text('Sin datos.',
+          style: TextStyle(color: Theme.of(context).hintColor));
     }
 
-    return Column(
-      children: top3.asMap().entries.map((e) {
-        final entry = e.value;
-        final medals = ['🥇', '🥈', '🥉'];
-        final amountStr = s.stealthMode
-            ? '••••'
-            : '${s.currencySymbol}${entry.value.toStringAsFixed(0)}';
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Text(medals[e.key],
-              style: const TextStyle(fontSize: 22)),
-          title: Text(entry.key,
-              style: const TextStyle(fontSize: 13)),
-          trailing: Text(amountStr,
-              style: const TextStyle(
-                  color: Colors.green, fontWeight: FontWeight.bold)),
-        );
-      }).toList(),
+    const medals = ['🥇', '🥈', '🥉'];
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Column(
+        children: top3.asMap().entries.map((e) {
+          final entry = e.value;
+          final amountStr = s.stealthMode
+              ? '••••'
+              : '${s.currencySymbol}${entry.value.toStringAsFixed(0)}';
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Text(medals[e.key], style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    entry.key,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  amountStr,
+                  style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildComparison(double income, double priorIncome, double expense,
-      double priorExpense, double net, double priorNet,
-      AppSettingsProvider s) {
-    return Container(
+      double priorExpense, double net, double priorNet, AppSettingsProvider s) {
+    final errorColor = Theme.of(context).colorScheme.error;
+    return AppCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         children: [
           _compRow('Ingresos', income, priorIncome, Colors.green, s),
-          const Divider(height: 16),
-          _compRow('Gastos', expense, priorExpense, Colors.red, s),
-          const Divider(height: 16),
-          _compRow(
-              'Balance', net, priorNet,
-              net >= 0 ? Colors.greenAccent : Colors.redAccent, s),
+          const Divider(height: 18),
+          _compRow('Gastos', expense, priorExpense, errorColor, s),
+          const Divider(height: 18),
+          _compRow('Balance', net, priorNet,
+              net >= 0 ? Colors.green : errorColor, s),
         ],
       ),
     );
@@ -414,31 +479,40 @@ class _ReportScreenState extends State<ReportScreen> {
   Widget _compRow(String label, double current, double prior, Color color,
       AppSettingsProvider s) {
     final diff = current - prior;
-    final pct = prior == 0
-        ? (current > 0 ? 100.0 : 0.0)
-        : (diff / prior * 100);
-    final arrow = diff >= 0 ? '▲' : '▼';
-    final arrowColor = diff >= 0 ? Colors.greenAccent : Colors.redAccent;
+    final pct =
+        prior == 0 ? (current > 0 ? 100.0 : 0.0) : (diff / prior * 100);
+    final isUp = diff >= 0;
+    final arrowColor = isUp ? Colors.green : Theme.of(context).colorScheme.error;
     final currentStr = s.stealthMode
         ? '••••'
         : '${s.currencySymbol}${current.toStringAsFixed(0)}';
-    final diffStr = s.stealthMode
-        ? ''
-        : '$arrow ${pct.abs().toStringAsFixed(1)}%';
 
     return Row(
       children: [
         Expanded(
           child: Text(label,
-              style: const TextStyle(color: Colors.white54, fontSize: 13)),
+              style: TextStyle(
+                  color: Theme.of(context).hintColor, fontSize: 13)),
         ),
         Text(currentStr,
             style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 14)),
-        const SizedBox(width: 8),
+                color: color, fontWeight: FontWeight.w800, fontSize: 14)),
+        const SizedBox(width: 10),
         if (!s.stealthMode)
-          Text(diffStr,
-              style: TextStyle(color: arrowColor, fontSize: 11)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: arrowColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${isUp ? '▲' : '▼'} ${pct.abs().toStringAsFixed(1)}%',
+              style: TextStyle(
+                  color: arrowColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700),
+            ),
+          ),
       ],
     );
   }

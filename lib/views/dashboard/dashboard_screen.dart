@@ -11,6 +11,7 @@ import '../../services/ad_service.dart';
 import '../../services/finance_service.dart';
 import '../../models/transaction_model.dart';
 import '../../widgets/ad_banner.dart';
+import '../plans/plans_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final void Function(int tabIndex) onNavigate;
@@ -586,49 +587,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showPlansDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Planes BizPulse'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PlanTile(name: 'Free', price: r'$0', features: const [
-                '1 usuario',
-                'Datos locales',
-                'Sin backup automático',
-              ]),
-              const Divider(),
-              _PlanTile(
-                  name: 'Pro 🚀',
-                  price: r'USD $10/mes',
-                  highlight: true,
-                  features: const [
-                    'Sync en la nube',
-                    'Sin anuncios',
-                    'Backup automático',
-                    'Soporte prioritario',
-                  ]),
-              const Divider(),
-              _PlanTile(
-                  name: 'Enterprise',
-                  price: r'USD $20/mes',
-                  features: const [
-                    'Multi-usuario',
-                    'Reportes avanzados',
-                    'Integración WhatsApp Business',
-                  ]),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
+    // Navega a la pantalla real de planes (RevenueCat) en vez del diálogo viejo
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PlansScreen()),
     );
   }
 
@@ -734,55 +696,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ── Plan tile ──────────────────────────────────────────────────────────────────
-
-class _PlanTile extends StatelessWidget {
-  final String name;
-  final String price;
-  final List<String> features;
-  final bool highlight;
-
-  const _PlanTile({
-    required this.name,
-    required this.price,
-    required this.features,
-    this.highlight = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = highlight
-        ? Theme.of(context).colorScheme.primary
-        : Colors.grey;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(name,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: highlight ? color : null)),
-              const Spacer(),
-              Text(price, style: const TextStyle(fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ...features.map((f) => Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 2),
-                child: Row(
-                  children: [
-                    Icon(Icons.check, size: 13, color: color),
-                    const SizedBox(width: 4),
-                    Text(f, style: const TextStyle(fontSize: 12)),
-                  ],
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-}

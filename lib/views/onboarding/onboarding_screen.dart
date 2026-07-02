@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../providers/app_settings.dart';
@@ -437,7 +436,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     boxShadow: [
                       if (_selectedColor == color)
-                        BoxShadow(color: color.withOpacity(0.4), blurRadius: 10, spreadRadius: 2)
+                        BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 10, spreadRadius: 2)
                     ],
                   ),
                 ),

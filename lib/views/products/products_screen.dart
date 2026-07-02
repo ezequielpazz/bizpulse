@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/product.dart';
 import '../../services/product_service.dart';
+import '../../widgets/ui_kit.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -12,38 +13,13 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   final _svc = ProductService();
 
-  // ── Bottom sheet (add / edit) ───────────────────────────────────────────────
+  // ── Form (add / edit) ───────────────────────────────────────────────────────
 
   Future<void> _openForm({Product? product}) async {
     await showDialog(
       context: context,
       builder: (_) => _ProductForm(svc: _svc, product: product),
     );
-  }
-
-  // ── Delete with confirmation ────────────────────────────────────────────────
-
-  Future<bool> _confirmDelete(Product p) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar producto'),
-        content:
-            Text('¿Eliminar "${p.name}"? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-    return ok ?? false;
   }
 
   // ── Long-press options ──────────────────────────────────────────────────────
@@ -66,14 +42,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Eliminar',
-                  style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete_outline_rounded,
+                  color: Theme.of(context).colorScheme.error),
+              title: Text('Eliminar',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.error)),
               onTap: () async {
                 Navigator.pop(context);
-                final ok = await _confirmDelete(p);
+                final ok = await confirmDelete(
+                  context,
+                  title: 'Eliminar producto',
+                  message:
+                      '¿Eliminar "${p.name}"? Esta acción no se puede deshacer.',
+                );
                 if (!mounted) return;
-                if (ok) await _svc.delete(p.id);
+                if (ok) {
+                  try {
+                    await _svc.delete(p.id);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error al eliminar: $e')),
+                      );
+                    }
+                  }
+                }
               },
             ),
           ],
@@ -86,67 +79,103 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildCard(Product p) {
     final isLow = p.isLowStock;
+    final primary = Theme.of(context).colorScheme.primary;
+    final accent = isLow ? Colors.orange : primary;
 
-    return Dismissible(
-      key: Key(p.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red.shade900,
-        child: const Icon(Icons.delete_outline, color: Colors.white),
-      ),
-      confirmDismiss: (_) => _confirmDelete(p),
-      onDismissed: (_) => _svc.delete(p.id),
-      child: ListTile(
-        onTap: () => _openForm(product: p),
-        onLongPress: () => _showProductOptions(p),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.redAccent.withValues(alpha: 0.15),
-              child: const Icon(
-                Icons.shopping_bag_outlined,
-                color: Colors.redAccent,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Dismissible(
+        key: Key(p.id),
+        direction: DismissDirection.endToStart,
+        background: const DismissDeleteBackground(),
+        confirmDismiss: (_) => confirmDelete(
+          context,
+          title: 'Eliminar producto',
+          message: '¿Eliminar "${p.name}"? Esta acción no se puede deshacer.',
+        ),
+        onDismissed: (_) => _svc.delete(p.id),
+        child: AppCard(
+          onTap: () => _openForm(product: p),
+          onLongPress: () => _showProductOptions(p),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.shopping_bag_rounded,
+                        color: accent, size: 20),
+                  ),
+                  if (isLow)
+                    Positioned(
+                      top: -3,
+                      right: -3,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-            if (isLow)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isLow
+                          ? 'Stock: ${p.stock} · Mín: ${p.minStock} · ¡Reponer!'
+                          : 'Stock: ${p.stock} · Mín: ${p.minStock}',
+                      style: TextStyle(
+                        color: isLow
+                            ? Colors.orange
+                            : Theme.of(context).hintColor,
+                        fontWeight: isLow ? FontWeight.w600 : null,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '\$${p.price.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
                   ),
                 ),
               ),
-          ],
-        ),
-        title: Text(
-          p.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          isLow
-              ? 'Stock: ${p.stock}  •  Mín: ${p.minStock}  ⚠ Stock bajo'
-              : 'Stock: ${p.stock}  •  Mín: ${p.minStock}',
-          style: TextStyle(
-            color: isLow ? Colors.red.shade300 : Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-        trailing: Text(
-          '\$${p.price.toStringAsFixed(2)}',
-          style: const TextStyle(
-            color: Colors.redAccent,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+            ],
           ),
         ),
       ),
@@ -166,12 +195,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
+            return ErrorState(
+              message: '${snap.error}',
+              onRetry: () => setState(() {}),
+            );
           }
           final items = snap.data ?? [];
           if (items.isEmpty) {
-            return const Center(
-              child: Text('No hay productos. Agregá el primero.'),
+            return const EmptyState(
+              icon: Icons.shopping_bag_rounded,
+              title: 'Sin productos aún',
+              subtitle:
+                  'Cargá los productos que vendés (shampoo, cremas, accesorios...) con su precio y stock.',
             );
           }
 
@@ -182,9 +217,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
               if (lowCount > 0)
                 Container(
                   width: double.infinity,
-                  color: Colors.red.shade900.withValues(alpha: 0.4),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.warning_amber_rounded,
@@ -193,15 +234,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       Text(
                         '$lowCount producto${lowCount > 1 ? 's' : ''} con stock bajo',
                         style: const TextStyle(
-                            color: Colors.orange, fontSize: 13),
+                          color: Colors.orange,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ),
               Expanded(
-                child: ListView.separated(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 4, bottom: 88),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 0),
                   itemBuilder: (_, i) => _buildCard(items[i]),
                 ),
               ),
@@ -213,13 +257,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
         onPressed: () => _openForm(),
         icon: const Icon(Icons.add),
         label: const Text('Nuevo producto'),
-        backgroundColor: Colors.redAccent,
       ),
     );
   }
 }
 
-// ── Form bottom sheet ──────────────────────────────────────────────────────────
+// ── Form dialog ────────────────────────────────────────────────────────────────
 
 class _ProductForm extends StatefulWidget {
   final ProductService svc;
@@ -300,6 +343,7 @@ class _ProductFormState extends State<_ProductForm> {
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
     return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(isEdit ? 'Editar producto' : 'Nuevo producto'),
       content: SingleChildScrollView(
         child: Form(
@@ -388,15 +432,13 @@ class _ProductFormState extends State<_ProductForm> {
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _saving ? null : _save,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
           child: _saving
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : Text(isEdit ? 'Guardar cambios' : 'Agregar producto'),
         ),

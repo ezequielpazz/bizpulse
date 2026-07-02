@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/app_settings.dart';
 import '../../services/finance_service.dart';
+import '../../widgets/ui_kit.dart';
 import '../reports/report_screen.dart';
 
 class FinanceScreen extends StatefulWidget {
@@ -36,42 +37,45 @@ class _FinanceScreenState extends State<FinanceScreen> {
       }
     }
     final net = income - expense;
+    final netColor = net >= 0 ? Colors.green : Theme.of(context).colorScheme.error;
 
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _monthFmt.format(now).toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              letterSpacing: 1.2,
-              color: Colors.grey,
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: AppCard(
+        radius: 18,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _monthFmt.format(now).toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).hintColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.trending_up_rounded,
+                    size: 16, color: Theme.of(context).hintColor),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _summaryCell('Ingresos', income, Colors.green, s),
-              const SizedBox(width: 12),
-              _summaryCell('Gastos', expense, Colors.red, s),
-              const SizedBox(width: 12),
-              _summaryCell(
-                'Balance',
-                net,
-                net >= 0 ? Colors.greenAccent : Colors.redAccent,
-                s,
-                bold: true,
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _summaryCell('Ingresos', income, Colors.green, s),
+                const SizedBox(width: 12),
+                _summaryCell(
+                    'Gastos', expense, Theme.of(context).colorScheme.error, s),
+                const SizedBox(width: 12),
+                _summaryCell('Balance', net, netColor, s, bold: true),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -80,23 +84,36 @@ class _FinanceScreenState extends State<FinanceScreen> {
       AppSettingsProvider s, {bool bold = false}) {
     final text = s.stealthMode
         ? '••••'
-        : '${s.currencySymbol}${amount.toStringAsFixed(2)}';
+        : '${s.currencySymbol}${amount.toStringAsFixed(0)}';
     return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          const SizedBox(height: 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 15,
-              color: color,
-              fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color.withValues(alpha: 0.9))),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: color,
+                  fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -105,73 +122,72 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
   Widget _buildCard(FinanceTransaction t, AppSettingsProvider s) {
     final isIncome = t.isIncome;
-    final color = isIncome ? Colors.green : Colors.red;
-    final icon = isIncome ? Icons.arrow_downward : Icons.arrow_upward;
+    final color = isIncome ? Colors.green : Theme.of(context).colorScheme.error;
+    final icon =
+        isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     final amountText = s.stealthMode
         ? '${isIncome ? '+' : '-'}••••'
-        : '${isIncome ? '+' : '-'}${s.currencySymbol}${t.amount.toStringAsFixed(2)}';
+        : '${isIncome ? '+' : '-'}${s.currencySymbol}${t.amount.toStringAsFixed(0)}';
 
-    return Dismissible(
-      key: Key(t.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red.shade900,
-        child: const Icon(Icons.delete_outline, color: Colors.white),
-      ),
-      confirmDismiss: (_) => _confirmDelete(t),
-      onDismissed: (_) => _svc.delete(t.id),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.15),
-          child: Icon(icon, color: color, size: 20),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Dismissible(
+        key: Key(t.id),
+        direction: DismissDirection.endToStart,
+        background: const DismissDeleteBackground(),
+        confirmDismiss: (_) => confirmDelete(
+          context,
+          title: 'Eliminar transacción',
+          message:
+              '¿Eliminar "${t.description}"? Esta acción no se puede deshacer.',
         ),
-        title: Text(
-          t.description,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
-        subtitle: Text(
-          _dayFmt.format(t.date),
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        trailing: Text(
-          amountText,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+        onDismissed: (_) => _svc.delete(t.id),
+        child: AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.description,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _dayFmt.format(t.date),
+                      style: TextStyle(
+                          fontSize: 11, color: Theme.of(context).hintColor),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                amountText,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  // ── Delete confirmation ─────────────────────────────────────────────────────
-
-  Future<bool> _confirmDelete(FinanceTransaction t) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar transacción'),
-        content: Text(
-            '¿Eliminar "${t.description}"? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-    return ok ?? false;
   }
 
   // ── FAB ─────────────────────────────────────────────────────────────────────
@@ -193,7 +209,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         title: const Text('Ganancias'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bar_chart_outlined),
+            icon: const Icon(Icons.bar_chart_rounded),
             tooltip: 'Ver reporte',
             onPressed: () => Navigator.push(
               context,
@@ -209,23 +225,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-                  const SizedBox(height: 12),
-                  Text('Error: ${snap.error}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 13),
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => setState(() {}),
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Reintentar'),
-                  ),
-                ],
-              ),
+            return ErrorState(
+              message: '${snap.error}',
+              onRetry: () => setState(() {}),
             );
           }
 
@@ -235,27 +237,19 @@ class _FinanceScreenState extends State<FinanceScreen> {
             children: [
               _buildSummary(items, settings),
               if (items.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.receipt_long, size: 64, color: Colors.white24),
-                        const SizedBox(height: 12),
-                        const Text('Sin transacciones aún',
-                            style: TextStyle(fontSize: 16, color: Colors.white54)),
-                        const SizedBox(height: 4),
-                        const Text('Registrá tu primer ingreso o gasto',
-                            style: TextStyle(fontSize: 13, color: Colors.white30)),
-                      ],
-                    ),
+                const Expanded(
+                  child: EmptyState(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Sin transacciones aún',
+                    subtitle:
+                        'Registrá tu primer ingreso o gasto con el botón de abajo. También podés usar "Cobro rápido" desde el inicio.',
                   ),
                 )
               else
                 Expanded(
-                  child: ListView.separated(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 4, bottom: 88),
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (_, i) => _buildCard(items[i], settings),
                   ),
                 ),
@@ -267,13 +261,12 @@ class _FinanceScreenState extends State<FinanceScreen> {
         onPressed: _openForm,
         icon: const Icon(Icons.add),
         label: const Text('Nueva transacción'),
-        backgroundColor: Colors.redAccent,
       ),
     );
   }
 }
 
-// ── Form bottom sheet ──────────────────────────────────────────────────────────
+// ── Form dialog ────────────────────────────────────────────────────────────────
 
 class _TransactionForm extends StatefulWidget {
   final FinanceService svc;
@@ -337,8 +330,10 @@ class _TransactionFormState extends State<_TransactionForm> {
   Widget build(BuildContext context) {
     final isIncome = _type == TransactionType.income;
     final sym = context.read<AppSettingsProvider>().currencySymbol;
+    final hint = Theme.of(context).hintColor;
 
     return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text('Nueva transacción'),
       content: SingleChildScrollView(
         child: Form(
@@ -349,14 +344,15 @@ class _TransactionFormState extends State<_TransactionForm> {
               // Income / Expense toggle
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(8),
+                  color: hint.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                padding: const EdgeInsets.all(4),
                 child: Row(
                   children: [
                     _typeButton(
                       label: 'Ingreso',
-                      icon: Icons.arrow_downward,
+                      icon: Icons.arrow_downward_rounded,
                       selected: isIncome,
                       color: Colors.green,
                       onTap: () =>
@@ -364,9 +360,9 @@ class _TransactionFormState extends State<_TransactionForm> {
                     ),
                     _typeButton(
                       label: 'Gasto',
-                      icon: Icons.arrow_upward,
+                      icon: Icons.arrow_upward_rounded,
                       selected: !isIncome,
-                      color: Colors.red,
+                      color: Theme.of(context).colorScheme.error,
                       onTap: () =>
                           setState(() => _type = TransactionType.expense),
                     ),
@@ -377,9 +373,11 @@ class _TransactionFormState extends State<_TransactionForm> {
 
               TextFormField(
                 controller: _amount,
+                autofocus: true,
                 decoration: InputDecoration(
                   labelText: 'Monto *',
                   prefixText: '$sym ',
+                  border: const OutlineInputBorder(),
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
@@ -392,6 +390,9 @@ class _TransactionFormState extends State<_TransactionForm> {
                   if (parsed == null || parsed <= 0) {
                     return 'Ingresá un monto válido mayor a 0';
                   }
+                  if (parsed > 9999999) {
+                    return 'El monto es demasiado alto';
+                  }
                   return null;
                 },
               ),
@@ -399,8 +400,10 @@ class _TransactionFormState extends State<_TransactionForm> {
 
               TextFormField(
                 controller: _description,
-                decoration:
-                    const InputDecoration(labelText: 'Descripción *'),
+                decoration: const InputDecoration(
+                  labelText: 'Descripción *',
+                  border: OutlineInputBorder(),
+                ),
                 textCapitalization: TextCapitalization.sentences,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'La descripción es requerida'
@@ -410,11 +413,12 @@ class _TransactionFormState extends State<_TransactionForm> {
 
               InkWell(
                 onTap: _pickDate,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Fecha',
-                    suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today_rounded, size: 18),
                   ),
                   child: Text(_dayFmt.format(_date)),
                 ),
@@ -428,15 +432,13 @@ class _TransactionFormState extends State<_TransactionForm> {
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _saving ? null : _save,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
           child: _saving
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Text('Guardar'),
         ),
@@ -458,25 +460,25 @@ class _TransactionFormState extends State<_TransactionForm> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected
-                ? color.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: selected
-                ? Border.all(color: color, width: 1.5)
-                : Border.all(color: Colors.transparent),
+            color: selected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? color : Colors.transparent,
+              width: 1.5,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: selected ? color : Colors.grey, size: 18),
+              Icon(icon,
+                  color: selected ? color : Theme.of(context).hintColor,
+                  size: 18),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? color : Colors.grey,
-                  fontWeight:
-                      selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected ? color : Theme.of(context).hintColor,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ],
