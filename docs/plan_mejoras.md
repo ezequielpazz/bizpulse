@@ -55,6 +55,58 @@ Multi-empleado · Dashboard de equipo · Link público de reservas · Comisiones
 
 ---
 
+## 🚀 FASE ESCALA — Mejoras para cuando haya éxito (500+ usuarios)
+
+> Disparador: superar ~500 usuarios activos o ~50 suscriptores Pro.
+> Regla: nada de esto bloquea el lanzamiento, pero los ítems E1–E4 conviene
+> hacerlos ANTES de llegar a esa cifra porque se instalan en 1 día y sin datos
+> históricos después es tarde (no se puede medir retroactivamente).
+
+### E — Observabilidad (hacer ANTES del éxito, no después)
+
+| # | Tarea | Porqué |
+|---|-------|--------|
+| E1 | **Firebase Crashlytics** | Con 500 usuarios los crashes existen aunque nadie los reporte. Sin esto estamos ciegos: no sabemos qué se rompe ni en qué dispositivo. Play Store baja el ranking de apps con crash rate alto. |
+| E2 | **Firebase Analytics** (eventos clave: turno_creado, cobro_rapido, whatsapp_enviado, paywall_visto, suscripcion_iniciada) | Sin funnel no se puede saber dónde se pierden los usuarios ni qué feature convierte a Pro. Es imposible medir retroactivamente. |
+| E3 | **Firebase Remote Config** | Cambiar frecuencia de interstitials, textos del paywall o activar/desactivar features SIN publicar versión nueva (una release en Play tarda días en propagarse). |
+| E4 | **In-app review** (`in_app_review` tras 5 turnos creados) | Las reseñas orgánicas llegan solas solo cuando son malas. Pedir la reseña en el momento de satisfacción define el rating de la ficha. |
+
+### F — Costos Firebase (la factura crece con cada usuario)
+
+| # | Tarea | Porqué |
+|---|-------|--------|
+| F1 | **Paginar/limitar FinanceService.stream()** — hoy baja TODAS las transacciones sin límite | Bomba de costos #1: un usuario con 1 año de uso relee ~1.000 docs por apertura de Ganancias/Reportes. Con 500 usuarios se revienta el free tier (50K reads/día) y se pasa a facturar. Fix: query por rango de mes + limit. |
+| F2 | **Cachear _checkBirthdays()** — hoy hace getAll() de clientes en cada arranque | 1 read por cliente por apertura de app. 500 usuarios × 100 clientes × 3 aperturas/día = 150K reads/día solo en cumpleaños. Fix: correr 1 vez/día (SharedPreferences con fecha del último chequeo). |
+| F3 | **Migrar a plan Blaze con alertas de presupuesto** | El free tier (Spark) se agota con ~300 usuarios activos. Configurar alerta de gasto en $10/$25/$50 para no tener sorpresas. |
+| F4 | **Firebase App Check** | Sin App Check, cualquiera que extraiga la config del APK puede hacer requests contra nuestro Firestore y vaciarnos la cuota / inflarnos la factura. |
+| F5 | **Firestore scheduled backups** (export diario a Cloud Storage) | Con usuarios reales, un bug que corrompa datos sin backup = perder el negocio. Las rules protegen de accesos, no de bugs propios. |
+
+### G — Confianza del cobro (dinero real exige validación server-side)
+
+| # | Tarea | Porqué |
+|---|-------|--------|
+| G1 | **Webhook RevenueCat → Cloud Function → Firestore** | Hoy el plan se escribe en Firestore desde el CLIENTE (manipulable con root). Con pocos usuarios es riesgo teórico; con cientos, alguien lo va a intentar. El webhook server-side es la fuente de verdad. |
+| G2 | **Firestore rules que validen el campo `plan`** | Que solo la Cloud Function (Admin SDK) pueda escribir `users/{uid}.plan`, nunca el cliente. |
+| G3 | **Grace period / recuperación de pagos fallidos** | Tarjetas LATAM rechazan mucho. Configurar grace period en Play Console reduce churn involuntario ~20%. |
+
+### H — Soporte y retención
+
+| # | Tarea | Porqué |
+|---|-------|--------|
+| H1 | **Eliminación de cuenta in-app** | Política de Google Play OBLIGATORIA para apps con registro: si la detectan sin esto, la bajan de la tienda. Hoy solo se ofrece por email. |
+| H2 | **FCM push notifications** (re-engagement) | Las notificaciones actuales son locales (solo si la app corrió). Con FCM se puede recuperar usuarios inactivos ("hace 7 días no cargás turnos"). |
+| H3 | **Centro de ayuda / FAQ in-app** | Con 500 usuarios, el email de soporte se satura de preguntas repetidas. Un FAQ baja el 70% de tickets. |
+| H4 | **Programa de referidos** ("invitá a un colega, 1 mes de Pro gratis") | El rubro (peluqueras, barberos) se conoce entre sí — el boca a boca es el canal de adquisición más barato. |
+| H5 | **CI/CD con GitHub Actions** (analyze + test + build en cada push) | Con usuarios reales, romper producción cuesta reseñas de 1 estrella. Staged rollout (5%→20%→100%) en Play Console. |
+
+### Orden sugerido al llegar el éxito
+1. **Semana 1:** E1+E2 (ceguera cero) · F2 (fix de 30 min) · H1 (riesgo de baja de la tienda)
+2. **Semana 2:** F1 (paginación) · F3+F4 (Blaze + App Check) · E4 (reviews)
+3. **Semana 3-4:** G1+G2 (webhook server-side) · F5 (backups) · E3 (Remote Config)
+4. **Mes 2:** H2 (FCM) · H3 (FAQ) · H5 (CI/CD) · H4 (referidos)
+
+---
+
 ## ✅ Completado (histórico)
 
 - Free v1.0 completa (agenda, clientes, stock, finanzas, reportes, backup)
